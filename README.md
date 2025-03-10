@@ -21,10 +21,10 @@ Download dataset
 ```bash
 cd data
 python download.py
-# Enter the dataset index to download (eg. 1,2,3) to download MSCOCO, ViVQA and OpenViVQA dataset
+# Enter the dataset index to download (eg. 1,2,3 to download MSCOCO, ViVQA and OpenViVQA dataset)
 ```
 
-Generate COCO images for `vivqq` dataset
+Generate COCO images for `vivqa` dataset
 
 ```bash
 cd scripts
