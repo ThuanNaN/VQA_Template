@@ -1,0 +1,73 @@
+MSCOCO:
+  urls: [
+    "http://images.cocodataset.org/zips/train2014.zip",
+    "http://images.cocodataset.org/zips/val2014.zip",
+    "http://images.cocodataset.org/zips/test2015.zip"
+  ]
+  pre_cmd: "mkdir -p ./MSCOCO/"
+  path_save: ./MSCOCO/
+  download_type: "direct"
+  cmd: [
+    "unzip -q ./MSCOCO/train2014.zip -d ./MSCOCO/",
+    "unzip -q ./MSCOCO/val2014.zip -d ./MSCOCO/",
+    "unzip -q ./MSCOCO/test2015.zip -d ./MSCOCO/",
+    "rm ./MSCOCO/train2014.zip",
+    "rm ./MSCOCO/val2014.zip",
+    "rm ./MSCOCO/test2015.zip"
+  ]
+
+
+ViVQA:
+  url: https://github.com/kh4nh12/ViVQA.git
+  path_save: ./vivqa
+  download_type: "git"
+
+
+OpenViVQA:
+  url: https://huggingface.co/datasets/uitnlp/OpenViVQA-dataset
+  path_save: ./openvivqa
+  download_type: "huggingface"
+  cmd: [
+    "unzip -q ./openvivqa/train-images.zip -d ./openvivqa/",
+    "unzip -q ./openvivqa/dev-images.zip -d ./openvivqa/",
+    "unzip -q ./openvivqa/test-images.zip -d ./openvivqa/",
+    "rm ./openvivqa/train-images.zip",
+    "rm ./openvivqa/dev-images.zip",
+    "rm ./openvivqa/test-images.zip"
+  ]
+
+
+ViTextVQA:
+  url: https://huggingface.co/datasets/minhquan6203/ViTextVQA
+  path_save: ./vitextvqa
+  download_type: "huggingface"
+  cmd: [
+    "unzip -q ./vitextvqa/ViTextVQA_images.zip -d ./vitextvqa/test_zip/",
+    "mv ./vitextvqa/test_zip/st_images ./vitextvqa/images",
+    "rm -r ./vitextvqa/test_zip",
+    "rm ./vitextvqa/ViTextVQA_images.zip"
+  ]
+
+
+ViOCRVQA:
+  url: https://huggingface.co/datasets/huyhuy123/ViOCRVQA
+  path_save: ./viocrvqa
+  download_type: "huggingface"
+  cmd: [
+    "unzip -q ./viocrvqa/data_ViOCRVQA.zip -d ./viocrvqa/",
+    "rm ./viocrvqa/data_ViOCRVQA.zip",
+    "mv ./viocrvqa/data/* ./viocrvqa/",
+    "rm -r ./viocrvqa/data",
+    "mv ./viocrvqa/bf_all_img ./viocrvqa/images/",
+  ]
+
+
+EVJVQA:
+  url: https://huggingface.co/datasets/dinhanhx/evjvqa
+  path_save: ./evjvqa
+  download_type: "huggingface"
+  cmd: [
+    "unzip -q ./evjvqa/train-images.zip -d ./evjvqa/",
+    "rm ./evjvqa/train-images.zip",
+    "mv ./evjvqa/train-images ./evjvqa/images",
+  ]
