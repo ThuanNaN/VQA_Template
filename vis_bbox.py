@@ -20,7 +20,7 @@ attr_id2class = {i: attr_classes[i] for i in range(len(attr_classes))}
 # Define the mapping between TSV files and their corresponding image directories
 IMG_DIR = {
     "vivqa_obj36.tsv": "./data/vivqa/images",
-    "openvivqa_train_obj36.tsv": "./data/openvivqa/train-images",
+    "openvivqa_train_obj36.tsv": "./data/openvivqa/training-images",
     "openvivqa_dev_obj36.tsv": "./data/openvivqa/dev-images",
     "openvivqa_test_obj36.tsv": "./data/openvivqa/test-images",
 }
