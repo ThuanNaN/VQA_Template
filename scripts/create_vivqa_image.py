@@ -14,16 +14,20 @@ def get_image_ids(data: pd.DataFrame):
 def get_image_paths(image_ids: list):
     return [f"{MSCOCO_image_dir}/COCO_train2014_{image_id:012}.jpg" for image_id in image_ids]
 
+
 def copy_to_vivqa_dir(image_paths: list, dest_dir: str):
     for image_path in image_paths:
-        try:
-            shutil.copy(image_path, dest_dir)
-        except FileNotFoundError:
+        if not os.path.exists(image_path):
             image_path = image_path.replace("train2014", "val2014")
-            try:
-                shutil.copy(image_path, dest_dir)
-            except FileNotFoundError:
-                print(f"Image not found: {image_path}")
+        if not os.path.exists(image_path):
+            raise FileNotFoundError(f"Image not found: {image_path}")
+        shutil.copy(image_path, dest_dir)
+        # then rename the image
+        image_name = os.path.basename(image_path)
+        new_name = image_name.split(".")[0].split("_")[-1]+".jpg"
+        new_image_path = os.path.join(dest_dir, new_name)
+        os.rename(os.path.join(dest_dir, image_name), new_image_path)
+        
 
 if __name__ == "__main__":
     train_data = pd.read_csv(train_csv_path)

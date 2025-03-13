@@ -28,7 +28,7 @@ Generate COCO images for `vivqa` dataset
 
 ```bash
 cd scripts
-python vivqa_image.py
+python create_vivqa_image.py
 ```
 
 ### Tools
