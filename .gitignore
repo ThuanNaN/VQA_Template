@@ -173,3 +173,5 @@ cython_debug/
 data/MSCOCO/
 data/openvivqa/
 data/vivqa/
+
+*.tsv
