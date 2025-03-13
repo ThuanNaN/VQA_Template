@@ -1,3 +1,4 @@
+import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -6,7 +7,6 @@ import os
 import gradio as gr
 from utils.dataset_utils import load_obj_tsv
 import time
-import functools
 
 # Load class vocabularies
 with open("./data/1600-400-20/objects_vocab.txt", "r") as f:
@@ -503,5 +503,10 @@ def create_interface():
     return app
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Visuzlize the bounding boxes of detected objects")
+    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host IP address")
+    parser.add_argument("--port", type=int, default=7860, help="Port number")
+    args = parser.parse_args()
+    
     app = create_interface()
-    app.launch(server_name="0.0.0.0", server_port=7860)
+    app.launch(server_name=args.host, server_port=args.port)
