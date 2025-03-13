@@ -31,6 +31,14 @@ cd scripts
 python vivqa_image.py
 ```
 
+### Tools
+
+- Visulize bbox
+
+```bash
+python vis_bbox.py --port 0.0.0.0 --host 7860
+```
+
 ## Dataset
 
 - [ ] [ViVQA](https://github.com/kh4nh12/ViVQA)
