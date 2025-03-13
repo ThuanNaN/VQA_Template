@@ -175,3 +175,4 @@ data/openvivqa/
 data/vivqa/
 
 *.tsv
+test.ipynb
