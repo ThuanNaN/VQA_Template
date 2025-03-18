@@ -1,11 +1,11 @@
 import wandb
 import os
 import argparse
-import numpy as np
 from dataset import ViVQADataset, OpenViVQADataset
 from transformers import AutoTokenizer, AutoProcessor
 from models import SimpleVQAConfig, SimpleVQA
 from transformers import TrainingArguments, Trainer
+from utils import compute_metrics
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -121,12 +121,6 @@ if __name__ == '__main__':
         run_name=args.run_name,
         report_to="wandb" if args.report_to_wandb else "none"
     )
-
-    def compute_metrics(eval_pred):
-        logits, labels = eval_pred
-        predictions = np.argmax(logits, axis=-1)
-        accuracy = np.mean(predictions == labels)
-        return {"accuracy": accuracy}
 
     trainer = Trainer(
         model=model,
