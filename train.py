@@ -2,9 +2,11 @@ import wandb
 import os
 import argparse
 from dataset import ViVQADataset, OpenViVQADataset
-from transformers import AutoTokenizer, AutoProcessor
 from models import SimpleVQAConfig, SimpleVQA
-from transformers import TrainingArguments, Trainer
+from transformers import (
+    AutoTokenizer, AutoProcessor, 
+    TrainingArguments, Trainer, EarlyStoppingCallback
+)
 from utils import compute_metrics
 
 if __name__ == '__main__':
@@ -12,7 +14,7 @@ if __name__ == '__main__':
     parser.add_argument('--vis_model_name', type=str, default='google/vit-base-patch16-224', 
                         choices=['google/vit-base-patch16-224', 'facebook/deit-base-distilled-patch16-224'],
                         help='Vision model name (default: %(default)s)')
-    parser.add_argument('--text_model_name', type=str, default='vinai/phobert-base-v2',
+    parser.add_argument('--text_model_name', type=str, default='vinai/bartpho-syllable-base',
                         choices=['vinai/bartpho-syllable-base', 'vinai/bartpho-syllable', 'xlm-roberta-base'],
                         help='Text model name (default: %(default)s)')
     parser.add_argument('--seed', type=int, default=59,
@@ -35,9 +37,11 @@ if __name__ == '__main__':
                         help='Number of gradient accumulation steps (default: %(default)s)')
     parser.add_argument('--warmup_steps', type=int, default=250,
                         help='Number of warmup steps for learning rate scheduler (default: %(default)s)')
+    parser.add_argument('--patience', type=int, default=3,
+                        help='Number of epochs to wait before early stopping (default: %(default)s)')
     parser.add_argument('--fp16', action='store_true',
                         help='Use mixed precision training')
-    parser.add_argument('--logging_steps', type=int, default=100,
+    parser.add_argument('--logging_steps', type=int, default=50,
                         help='Log training process every n steps (default: %(default)s)')
     parser.add_argument('--report_to_wandb', action='store_true',
                         help='Log training process to wandb')
@@ -92,13 +96,10 @@ if __name__ == '__main__':
     else:
         raise ValueError("Dataset name not found")
     
-    num_classes = len(train_dataset.label_encoder)
-
     config = SimpleVQAConfig(
         vis_model_name=vis_model_name,
         text_model_name=text_model_name,
-        hidden_size=768,
-        num_classes=num_classes
+        num_classes=len(train_dataset.label_encoder)
     )
     model = SimpleVQA(config)
 
@@ -113,6 +114,9 @@ if __name__ == '__main__':
         num_train_epochs=args.epochs,
         eval_strategy="epoch",
         save_strategy="epoch",
+        load_best_model_at_end=True,
+        metric_for_best_model="eval_loss",
+        greater_is_better=False,
         optim="adamw_torch",
         gradient_accumulation_steps=args.gradient_accumulation,
         learning_rate=args.learning_rate,
@@ -128,12 +132,15 @@ if __name__ == '__main__':
         report_to="wandb" if args.report_to_wandb else "none"
     )
 
+    early_stopping = EarlyStoppingCallback(args.patience)
+
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=val_dataset,
-        compute_metrics=compute_metrics
+        compute_metrics=compute_metrics,
+        callbacks=[early_stopping],
     )
 
     trainer.train()
