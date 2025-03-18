@@ -16,11 +16,11 @@ if __name__ == '__main__':
                         choices=['vinai/phobert-base-v2'],
                         help='Text model name (default: %(default)s)')
     parser.add_argument('--seed', type=int, default=59,
-                        help='random seed will start at seed = 2 (default: %(default)s)')
+                        help='random seed (default: %(default)s)')
     parser.add_argument('--dataset_name', type=str, default='ViVQA', choices=['ViVQA', 'OpenViVQA'],
                         help='Dataset name (default: %(default)s)')
     parser.add_argument('--batch_size', type=int, default=32,
-                        help='Mini-batch size for each iteration when training model (default: %(default)s)')
+                        help='Mini-batch size for each iteration (default: %(default)s)')
     parser.add_argument('--seq_len', type=int, default=64,
                         help='Sequence length for text input (default: %(default)s)')
     parser.add_argument('--dataloader_workers', type=int, default=0,
