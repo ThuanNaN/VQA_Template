@@ -1,7 +1,7 @@
 wget==3.2
 python-dotenv==1.0.1
 pyyaml==6.0.2
-huggingface_hub=0.29.3
+huggingface_hub==0.29.3
 gdown==5.2.0
 pandas==2.2.3
 numpy==2.2.3
