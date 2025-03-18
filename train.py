@@ -9,10 +9,10 @@ from transformers import TrainingArguments, Trainer
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('vis_model_name', type=str, default='google/vit-base-patch16-224', 
+    parser.add_argument('--vis_model_name', type=str, default='google/vit-base-patch16-224', 
                         choices=['google/vit-base-patch16-224'],
                         help='Vision model name (default: %(default)s)')
-    parser.add_argument('text_model_name', type=str, default='vinai/phobert-base-v2',
+    parser.add_argument('--text_model_name', type=str, default='vinai/phobert-base-v2',
                         choices=['vinai/phobert-base-v2'],
                         help='Text model name (default: %(default)s)')
     parser.add_argument('--seed', type=int, default=59,
