@@ -1,14 +1,20 @@
 import wandb
 import os
 import argparse
+import numpy as np
 from dataset import ViVQADataset, OpenViVQADataset
 from transformers import AutoTokenizer, AutoProcessor
 from models import SimpleVQAConfig, SimpleVQA
 from transformers import TrainingArguments, Trainer
-from utils import compute_metrics
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('vis_model_name', type=str, default='google/vit-base-patch16-224', 
+                        choices=['google/vit-base-patch16-224'],
+                        help='Vision model name (default: %(default)s)')
+    parser.add_argument('text_model_name', type=str, default='vinai/phobert-base-v2',
+                        choices=['vinai/phobert-base-v2'],
+                        help='Text model name (default: %(default)s)')
     parser.add_argument('--seed', type=int, default=59,
                         help='random seed will start at seed = 2 (default: %(default)s)')
     parser.add_argument('--dataset_name', type=str, default='ViVQA', choices=['ViVQA', 'OpenViVQA'],
@@ -47,8 +53,8 @@ if __name__ == '__main__':
     os.environ["WANDB_LOG_MODEL"]="false"
     os.environ["WANDB_WATCH"]="false"
 
-    vis_model_name = 'google/vit-base-patch16-224'
-    text_model_name = 'vinai/phobert-base-v2'
+    vis_model_name = args.vis_model_name
+    text_model_name = args.text_model_name
 
     vis_processor = AutoProcessor.from_pretrained(vis_model_name, use_fast=True)
     text_processor = AutoTokenizer.from_pretrained(text_model_name)
@@ -121,6 +127,12 @@ if __name__ == '__main__':
         run_name=args.run_name,
         report_to="wandb" if args.report_to_wandb else "none"
     )
+
+    def compute_metrics(eval_pred):
+        logits, labels = eval_pred
+        predictions = np.argmax(logits, axis=-1)
+        accuracy = np.mean(predictions == labels)
+        return {"accuracy": accuracy}
 
     trainer = Trainer(
         model=model,
