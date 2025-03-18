@@ -7,13 +7,10 @@
 
 ## Install dependencies
 
-Python dependencies are managed by [uv](https://github.com/astral-sh/uv)
-
 ```bash
 conda create -n vqa-template python=3.12.9 --y
 conda activate vqa-template
-pip install uv
-uv pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 Download dataset
