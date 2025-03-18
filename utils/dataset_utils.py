@@ -4,6 +4,7 @@ import csv
 import base64
 import time
 import numpy as np
+import torch
 
 csv.field_size_limit(sys.maxsize)
 FIELDNAMES = ["img_id", "img_h", "img_w", "objects_id", "objects_conf",
@@ -48,4 +49,33 @@ def load_obj_tsv(fname, topk=None) -> List[Dict[str, Union[str, int, np.ndarray]
                 break
     elapsed_time = time.time() - start_time
     print("Loaded %d images in file %s in %d seconds." % (len(data), fname, elapsed_time))
+    return data
+
+
+def ds_collate_fn(batch):
+    image_output = {}
+    question_output = {}
+    answer_output = []
+
+    pixel_values = []
+    question_input_ids = []
+    question_attention_mask = []
+    question_token_type_ids = []
+    for image, question, answer in batch:
+        pixel_values.append(image["pixel_values"].squeeze(0))
+        question_input_ids.append(question["input_ids"].squeeze(0))
+        question_attention_mask.append(question["attention_mask"].squeeze(0))
+        question_token_type_ids.append(question["token_type_ids"].squeeze(0))
+        answer_output.append(answer)
+    image_output["pixel_values"] = torch.stack(pixel_values)
+    question_output["input_ids"] = torch.stack(question_input_ids)
+    question_output["attention_mask"] = torch.stack(question_attention_mask)
+    question_output["token_type_ids"] = torch.stack(question_token_type_ids)
+    answer_output = torch.tensor(answer_output)
+    return image_output, question_output, answer_output
+
+
+def dict2device(data, device):
+    for k, v in data.items():
+        data[k] = v.to(device)
     return data
