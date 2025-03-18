@@ -3,14 +3,11 @@ import copy
 import time
 import logging
 import argparse
-import yaml
-from yaml.loader import SafeLoader
 from tqdm import tqdm
 import wandb
 import torch
 import torch.nn as nn
-from utils import seed_everything, colorstr
-from torch.optim.lr_scheduler import MultiStepLR
+from utils import seed_everything, colorstr, ds_collate_fn, dict2device
 from dataset import ViVQADataset, OpenViVQADataset
 from transformers import AutoTokenizer, AutoProcessor
 from torch.utils.data import DataLoader
@@ -65,12 +62,13 @@ def train_model(model, dataloaders, optimizer, opt, wandb, lr_scheduler=None):
                           bar_format='{desc} {percentage:>7.0f}%|{bar:10}{r_bar}{bar:-10b}',
                           unit='batch')
 
-            for inputs, labels in _phase:
-                inputs = inputs.to(device)
+            for images, quesions, labels in _phase:
+                images = dict2device(images, device)
+                quesions = dict2device(quesions, device)
                 labels = labels.to(device)
                 optimizer.zero_grad()
                 with torch.set_grad_enabled(phase == "train"):
-                    outputs = model(inputs)
+                    outputs = model(images, quesions)
                     loss = criterion(outputs, labels)
                     _, preds = torch.max(outputs, 1)
                     if phase == 'train':
@@ -80,8 +78,8 @@ def train_model(model, dataloaders, optimizer, opt, wandb, lr_scheduler=None):
                                              ["lr"]) if lr_scheduler else history['lr'].append(opt.lr)
                         if lr_scheduler is not None:
                             lr_scheduler.step()
-                running_items += inputs.size(0)
-                running_loss += loss.item() * inputs.size(0)
+                running_items += labels.size(0)
+                running_loss += loss.item() * labels.size(0)
                 running_corrects += torch.sum(preds == labels.data)
                 epoch_loss = running_loss / running_items
                 epoch_acc = running_corrects / running_items
@@ -149,12 +147,20 @@ if __name__ == '__main__':
                         help='cuda device or cpu (default: %(default)s)')
     parser.add_argument('--seed', type=int, default=2,
                         help='random seed will start at seed = 2 (default: %(default)s)')
+    parser.add_argument('--dataset_name', type=str, default='ViVQA', choices=['ViVQA', 'OpenViVQA'],
+                        help='Dataset name (default: %(default)s)')
     parser.add_argument('--batch_size', type=int, default=128,
                         help='Mini-batch size for each iteration when training model (default: %(default)s)')
     parser.add_argument('--epochs', type=int, default=10,
                         help='Number of epochs to train model (default: %(default)s)')
     parser.add_argument('--lr', type=float, default=1e-4,
                         help='Initial learning rate (default: %(default)s)')
+    parser.add_argument('--weight_decay', type=float, default=1e-4,
+                        help='Weight decay for optimizer (default: %(default)s)')
+    parser.add_argument('--lr_scheduler', action='store_true',
+                        help='Use learning rate scheduler (default: %(default)s)')
+    parser.add_argument('--seq_len', type=int, default=64,
+                        help='Sequence length for text input (default: %(default)s)')
     parser.add_argument('--wandb_log', action='store_true',
                         help='Log training process to wandb')
     parser.add_argument('--wandb_name', type=str, default='VQA-Tempate',
@@ -179,25 +185,48 @@ if __name__ == '__main__':
         wandb = None
 
     text_processor = AutoTokenizer.from_pretrained("vinai/phobert-base-v2")
-    img_processor = AutoProcessor.from_pretrained('google/vit-base-patch16-224')
+    vis_processor = AutoProcessor.from_pretrained('google/vit-base-patch16-224', use_fast=True)
 
-    train_dataset = ViVQADataset(
-        ann_path="data/vivqa/train.csv",
-        img_dir="data/vivqa/images",
-        text_processor=text_processor,
-        img_processor=img_processor,
-    )
-    val_dataset = ViVQADataset(
-        ann_path="data/vivqa/test.csv",
-        img_dir="data/vivqa/images",
-        text_processor=text_processor,
-        img_processor=img_processor,
-    )
+    if opt.dataset_name == 'ViVQA':
+        train_dataset = ViVQADataset(
+            ann_path="data/vivqa/train.csv",
+            img_dir="data/vivqa/images",
+            text_processor=text_processor,
+            vis_processor=vis_processor,
+            padding="max_length", max_length=opt.seq_len, truncation=True,
+        )
+        val_dataset = ViVQADataset(
+            ann_path="data/vivqa/test.csv",
+            img_dir="data/vivqa/images",
+            text_processor=text_processor,
+            vis_processor=vis_processor,
+            padding="max_length", max_length=opt.seq_len, truncation=True,
+        )
+    elif opt.dataset_name == 'OpenViVQA':
+        train_dataset = OpenViVQADataset(
+            ann_path="data/openvivqa/train.csv",
+            img_dir="data/openvivqa/images",
+            text_processor=text_processor,
+            vis_processor=vis_processor,
+            padding="max_length", max_length=opt.seq_len, truncation=True,
+        )
+        val_dataset = OpenViVQADataset(
+            ann_path="data/openvivqa/test.csv",
+            img_dir="data/openvivqa/images",
+            text_processor=text_processor,
+            vis_processor=vis_processor,
+            padding="max_length", max_length=opt.seq_len, truncation=True,
+        )
+    else:
+        raise ValueError("Dataset name not found")
+    
     num_classes = len(train_dataset.get_label_encoder())
     LOGGER.info(f"Number of classes: {num_classes}")
 
-    train_loader = DataLoader(train_dataset, batch_size=opt.batch_size, shuffle=True, num_workers=4, pin_memory=True)
-    val_loader = DataLoader(val_dataset, batch_size=opt.batch_size, shuffle=False, num_workers=4, pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=opt.batch_size, collate_fn=ds_collate_fn,
+                              shuffle=True, num_workers=4, pin_memory=True)
+    val_loader = DataLoader(val_dataset, batch_size=opt.batch_size, collate_fn=ds_collate_fn,
+                            shuffle=False, num_workers=4, pin_memory=True)
 
     dataloaders = {
         "train": train_loader,
