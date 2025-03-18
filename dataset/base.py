@@ -17,15 +17,19 @@ class BaseDataset(Dataset):
         self.kwargs = kwargs
 
     def __len__(self):
-        return len(self.data)
+        return len(self.data["questions"])
 
     def __getitem__(self, idx):
         img_path = self.data['img_paths'][idx]
         pil_image = Image.open(img_path).convert('RGB')
         image = self.vis_processor(pil_image, return_tensors="pt")
+        image = image['pixel_values'].squeeze(0)
         question = self.data['questions'][idx]
         answer = self.data['answers'][idx]
-        question = self.text_processor(question, return_tensors="pt", **self.kwargs)
+        question = self.text_processor.encode(question, 
+                                              return_tensors="pt", 
+                                              **self.kwargs
+                                              ).squeeze(0)
         answer = self.label_encoder[answer]
         return image, question, answer
 
