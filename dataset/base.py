@@ -24,8 +24,8 @@ class BaseDataset(Dataset):
         pil_image = Image.open(img_path).convert('RGB')
         image = self.vis_processor(pil_image, return_tensors="pt")
         question = self.data['questions'][idx]
-        answer = self.data['answers'][idx]
         question = self.text_processor(question, return_tensors="pt", **self.kwargs)
+        answer = self.data['answers'][idx]
         answer = self.label_encoder[answer]
         return image, question, answer
 
