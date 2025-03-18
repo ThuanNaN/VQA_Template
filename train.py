@@ -1,25 +1,25 @@
 import wandb
 import os
 import argparse
-import numpy as np
 from dataset import ViVQADataset, OpenViVQADataset
 from transformers import AutoTokenizer, AutoProcessor
 from models import SimpleVQAConfig, SimpleVQA
 from transformers import TrainingArguments, Trainer
+from utils import compute_metrics
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--vis_model_name', type=str, default='google/vit-base-patch16-224', 
-                        choices=['google/vit-base-patch16-224'],
+                        choices=['google/vit-base-patch16-224', 'facebook/deit-base-distilled-patch16-224'],
                         help='Vision model name (default: %(default)s)')
     parser.add_argument('--text_model_name', type=str, default='vinai/phobert-base-v2',
-                        choices=['vinai/phobert-base-v2'],
+                        choices=['vinai/bartpho-syllable-base', 'vinai/bartpho-syllable', 'xlm-roberta-base'],
                         help='Text model name (default: %(default)s)')
     parser.add_argument('--seed', type=int, default=59,
                         help='random seed (default: %(default)s)')
     parser.add_argument('--dataset_name', type=str, default='ViVQA', choices=['ViVQA', 'OpenViVQA'],
                         help='Dataset name (default: %(default)s)')
-    parser.add_argument('--batch_size', type=int, default=32,
+    parser.add_argument('--batch_size', type=int, default=64,
                         help='Mini-batch size for each iteration (default: %(default)s)')
     parser.add_argument('--seq_len', type=int, default=64,
                         help='Sequence length for text input (default: %(default)s)')
@@ -127,12 +127,6 @@ if __name__ == '__main__':
         run_name=args.run_name,
         report_to="wandb" if args.report_to_wandb else "none"
     )
-
-    def compute_metrics(eval_pred):
-        logits, labels = eval_pred
-        predictions = np.argmax(logits, axis=-1)
-        accuracy = np.mean(predictions == labels)
-        return {"accuracy": accuracy}
 
     trainer = Trainer(
         model=model,
