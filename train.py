@@ -41,6 +41,7 @@ def train_model(model, dataloaders, optimizer, opt, wandb, device, lr_scheduler=
     best_model_optim = copy.deepcopy(optimizer.state_dict())
     best_val_acc = 0.0
 
+    model = torch.compile(model)
     model.to(device)
     for epoch in range(opt.epochs):
         LOGGER.info(colorstr(f'\nEpoch {epoch}/{opt.epochs-1}:'))
@@ -224,7 +225,7 @@ if __name__ == '__main__':
     optimizer = torch.optim.AdamW(model.parameters(),
                                   lr=opt.lr,
                                   weight_decay=opt.weight_decay)
-
+    
     best_model, val_acc = train_model(model=model,
                                       dataloaders=dataloaders,
                                       optimizer=optimizer,
