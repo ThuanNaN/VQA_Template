@@ -14,26 +14,32 @@ from dataclasses import dataclass
 class SimpleVQAConfig:
     vis_model_name: str
     text_model_name: str
-    hidden_size: int
     num_classes: int
+    hidden_size: int = 1024
+
 
 class TextEncoder(BaseTextEncoder):
-    def __init__(self, model_name: str):
+    def __init__(self, model_name: str, hidden_size: int):
         super(TextEncoder, self).__init__()
         self.encoder = AutoModel.from_pretrained(model_name)
+        self.proj = nn.Linear(self.encoder.config.hidden_size, hidden_size)
 
     def forward(self, inputs: str) -> Tensor:
         outputs = self.encoder(**inputs)
-        return outputs.last_hidden_state[:, 0, :] # [batch_size, hidden_size]
+        last_hidden_state = outputs.last_hidden_state[:, 0, :]
+        return self.proj(last_hidden_state)
 
 
 class VisEncoder(BaseVisEncoder):
-    def __init__(self, model_name: str):
+    def __init__(self, model_name: str, hidden_size: int):
         super(VisEncoder, self).__init__()
         self.encoder = AutoModel.from_pretrained(model_name)
+        self.proj = nn.Linear(self.encoder.config.hidden_size, hidden_size)
+
     def forward(self, inputs: Tensor) -> Tensor:
         outputs = self.encoder(**inputs)
-        return outputs.last_hidden_state[:, 0, :] # [batch_size, hidden_size]
+        last_hidden_state = outputs.last_hidden_state[:, 0, :]
+        return self.proj(last_hidden_state)
 
 
 class Classifier(BaseClassifier):
@@ -53,12 +59,8 @@ class Classifier(BaseClassifier):
 class SimpleVQA(BaseVQA):
     def __init__(self, config: SimpleVQAConfig):
         super(SimpleVQA, self).__init__()
-        self.vis_encoder = VisEncoder(config.vis_model_name)
-        self.text_encoder = TextEncoder(config.text_model_name)
-        assert self.vis_encoder.encoder.config.hidden_size == \
-            self.text_encoder.encoder.config.hidden_size, \
-            "Hidden size of text and visual encoder should be same"
-        
+        self.vis_encoder = VisEncoder(config.vis_model_name, config.hidden_size)
+        self.text_encoder = TextEncoder(config.text_model_name, config.hidden_size)
         self.classifier = Classifier(
             hidden_size=config.hidden_size,
             num_classes=config.num_classes
