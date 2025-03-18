@@ -17,9 +17,8 @@ logging.getLogger().setLevel(logging.INFO)
 logging.basicConfig(format="%(message)s", level=logging.INFO)
 LOGGER = logging.getLogger("VQA_AUG")
 
-def train_model(model, dataloaders, optimizer, opt, wandb, lr_scheduler=None):
+def train_model(model, dataloaders, optimizer, opt, wandb, device, lr_scheduler=None):
     since = time.perf_counter()
-    num_epochs, device = opt.epochs, opt.device
     LOGGER.info(f"\n{colorstr('Hyperparameter:')} {opt}")
     LOGGER.info(f"\n{colorstr('Device:')} {device}")
     LOGGER.info(f"\n{colorstr('Optimizer:')} {optimizer}")
@@ -43,8 +42,8 @@ def train_model(model, dataloaders, optimizer, opt, wandb, lr_scheduler=None):
     best_val_acc = 0.0
 
     model.to(device)
-    for epoch in range(num_epochs):
-        LOGGER.info(colorstr(f'\nEpoch {epoch}/{num_epochs-1}:'))
+    for epoch in range(opt.epochs):
+        LOGGER.info(colorstr(f'\nEpoch {epoch}/{opt.epochs-1}:'))
         for phase in ["train", "val"]:
             if phase == "train":
                 LOGGER.info(colorstr('bright_yellow', 'bold', '\n%20s' + '%15s' * 3) %
@@ -113,7 +112,7 @@ def train_model(model, dataloaders, optimizer, opt, wandb, lr_scheduler=None):
                 {time_elapsed // 3600}h \
                 {time_elapsed % 3600 // 60}m \
                 { time_elapsed % 60}s with \
-                {num_epochs} epochs")
+                {opt.epochs} epochs")
     LOGGER.info(f"Best val Acc: {round(best_val_acc.item(), 6)}")
     model.load_state_dict(best_model_wts)
     optimizer.load_state_dict(best_model_optim)
@@ -121,29 +120,10 @@ def train_model(model, dataloaders, optimizer, opt, wandb, lr_scheduler=None):
     return model, best_val_acc.item()
 
 
-def test_model(model, test_loader, device):
-    model.to(device)
-    model.eval()
-    totals = 0
-    corrects = 0
-    with torch.no_grad():
-        for inputs, labels in test_loader:
-            inputs = inputs.to(device)
-            labels = labels.to(device)
-
-            outputs = model(inputs)
-            _, preds = torch.max(outputs, 1)
-
-            totals += inputs.size(0)
-            corrects += torch.sum(preds == labels.data)
-
-    acc = corrects / totals
-    return acc.item()
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--device', default='cuda', choices=['cuda', 'cpu'],
+    parser.add_argument('--device', default='cuda',
                         help='cuda device or cpu (default: %(default)s)')
     parser.add_argument('--seed', type=int, default=2,
                         help='random seed will start at seed = 2 (default: %(default)s)')
@@ -169,6 +149,7 @@ if __name__ == '__main__':
                         help='Name of the run (default: %(default)s)')
     opt = parser.parse_args()
     seed_everything(opt.seed)
+    DEVICE = torch.device(opt.device)
 
     try:
         device_name = os.getlogin()
@@ -249,9 +230,8 @@ if __name__ == '__main__':
                                       optimizer=optimizer,
                                       opt=opt,
                                       wandb=wandb,
+                                      device=DEVICE,
                                       lr_scheduler=None)
-    test_acc = test_model(best_model, dataloaders["test"], opt.device)
-    LOGGER.info(f"Validation accuracy: {round(val_acc, 6)}")
-    LOGGER.info(f"Test accuracy: {round(test_acc, 6)}")
+    
     if opt.wandb_log:
         wandb.finish()
