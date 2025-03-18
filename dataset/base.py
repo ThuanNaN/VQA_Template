@@ -3,6 +3,7 @@ import json
 import pandas as pd
 from torch.utils.data import Dataset
 from PIL import Image
+import torch
 
 class BaseDataset(Dataset):
     def __init__(self, ann_path, img_dir, 
@@ -22,12 +23,28 @@ class BaseDataset(Dataset):
     def __getitem__(self, idx):
         img_path = self.data['img_paths'][idx]
         pil_image = Image.open(img_path).convert('RGB')
-        image = self.vis_processor(pil_image, return_tensors="pt")
-        question = self.data['questions'][idx]
-        question = self.text_processor(question, return_tensors="pt", **self.kwargs)
+        image = self.vis_processor(pil_image, return_tensors="pt")["pixel_values"].squeeze(0)
+        
+        question = self.text_processor(self.data['questions'][idx], 
+                                       return_tensors="pt", 
+                                       padding="max_length", 
+                                       truncation=True, 
+                                       **self.kwargs)
+        question_input_ids = question["input_ids"].squeeze(0)
+        question_attention_mask = question["attention_mask"].squeeze(0)
+
         answer = self.data['answers'][idx]
-        answer = self.label_encoder[answer]
-        return image, question, answer
+        answer_label = self.label_encoder.get(answer, None)
+        if answer_label is None:
+            raise ValueError(f"Label for answer '{answer}' not found in label encoder")
+        answer_label = torch.tensor(answer_label, dtype=torch.long)
+
+        return {
+            "image": image,
+            "question_input_ids": question_input_ids,
+            "question_attention_mask": question_attention_mask,
+            "label": answer_label
+        }
 
     def load_data(self, ann_path):
         if ann_path.endswith('.csv'):

@@ -1,3 +1,4 @@
+from typing import Optional
 import torch
 from torch import nn, Tensor
 from .base import (
@@ -62,8 +63,25 @@ class SimpleVQA(BaseVQA):
             hidden_size=config.hidden_size,
             num_classes=config.num_classes
         )
-    def forward(self, image_inputs: Tensor, text_inputs: Tensor) -> Tensor:
-        vis_features = self.vis_encoder(image_inputs)
-        text_features = self.text_encoder(text_inputs)
+        self.loss_fn = nn.CrossEntropyLoss()
+
+    def forward(self, 
+                image: Tensor, 
+                question_input_ids: Tensor, 
+                question_attention_mask: Tensor, 
+                labels: Optional[torch.Tensor] = None,
+                ) -> Tensor:
+        vis_features = self.vis_encoder({
+            "pixel_values": image
+        })
+        
+        text_features = self.text_encoder({
+            "input_ids": question_input_ids,
+            "attention_mask": question_attention_mask
+        }) 
         logits = self.classifier(vis_features, text_features)
-        return logits
+
+        loss = None
+        if labels is not None:
+            loss = self.loss_fn(logits, labels)
+        return {"loss": loss, "logits": logits}
