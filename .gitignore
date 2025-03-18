@@ -176,3 +176,4 @@ data/vivqa/
 
 *.tsv
 test.ipynb
+vqa_outputs/
