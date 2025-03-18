@@ -27,7 +27,7 @@ class BaseDataset(Dataset):
         answer = self.data['answers'][idx]
         question = self.text_processor(question, return_tensors="pt", **self.kwargs)
         answer = self.label_encoder[answer]
-        return image, question, answer, 
+        return image, question, answer
 
     def load_data(self, ann_path):
         if ann_path.endswith('.csv'):
