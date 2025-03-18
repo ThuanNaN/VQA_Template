@@ -1,0 +1,1 @@
+from .simple_vqa import SimpleVQAConfig, SimpleVQA
