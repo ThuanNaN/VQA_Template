@@ -13,7 +13,7 @@ from utils import compute_metrics
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--vis_model_name', type=str, default='google/vit-base-patch16-224', 
-                        choices=['google/vit-base-patch16-224', 'facebook/deit-base-distilled-patch16-224'],
+                        choices=['google/vit-base-patch16-224', 'microsoft/beit-base-patch16-224-pt22k-ft22k'],
                         help='Vision model name (default: %(default)s)')
     parser.add_argument('--text_model_name', type=str, default='vinai/bartpho-syllable-base',
                         choices=['vinai/bartpho-syllable-base', 'vinai/bartpho-syllable', 'FacebookAI/xlm-roberta-base'],
