@@ -16,7 +16,7 @@ if __name__ == '__main__':
                         choices=['google/vit-base-patch16-224', 'facebook/deit-base-distilled-patch16-224'],
                         help='Vision model name (default: %(default)s)')
     parser.add_argument('--text_model_name', type=str, default='vinai/bartpho-syllable-base',
-                        choices=['vinai/bartpho-syllable-base', 'vinai/bartpho-syllable', 'xlm-roberta-base'],
+                        choices=['vinai/bartpho-syllable-base', 'vinai/bartpho-syllable', 'FacebookAI/xlm-roberta-base'],
                         help='Text model name (default: %(default)s)')
     parser.add_argument('--seed', type=int, default=59,
                         help='random seed (default: %(default)s)')
