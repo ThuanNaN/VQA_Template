@@ -19,7 +19,7 @@ if __name__ == '__main__':
     parser.add_argument('--text_model_name', type=str, default='vinai/bartpho-syllable-base',
                         choices=['vinai/bartpho-syllable-base', 'vinai/bartpho-syllable', 'FacebookAI/xlm-roberta-base'],
                         help='Text model name (default: %(default)s)')
-    parser.add_argument('--seed', type=int, default=59,
+    parser.add_argument('--seed', type=int, default=71,
                         help='random seed (default: %(default)s)')
     parser.add_argument('--dataset_name', type=str, default='ViVQA', choices=['ViVQA', 'OpenViVQA'],
                         help='Dataset name (default: %(default)s)')
