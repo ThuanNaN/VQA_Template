@@ -1,5 +1,6 @@
-import wandb
 import os
+from pathlib import Path
+import wandb
 import argparse
 import torch
 from dataset import ViVQADataset, OpenViVQADataset
@@ -46,9 +47,9 @@ if __name__ == '__main__':
                         help='Log training process every n steps (default: %(default)s)')
     parser.add_argument('--report_to_wandb', action='store_true',
                         help='Log training process to wandb')
-    parser.add_argument('--wandb_name', type=str, default='VQA-Tempate',
+    parser.add_argument('--wandb_name', type=str, default='VQA-Template',
                         help='Name of wandb project (default: %(default)s)')
-    parser.add_argument('--output_dir', type=str, default='vqa_outputs',
+    parser.add_argument('--output_dir', type=str, default='runs',
                         help='Output directory for model checkpoints (default: %(default)s)')
     parser.add_argument('--run_name', type=str, default='run',
                         help='Name of the run (default: %(default)s)')
@@ -59,7 +60,10 @@ if __name__ == '__main__':
     os.environ["WANDB_PROJECT"]=args.wandb_name
     os.environ["WANDB_LOG_MODEL"]="false"
     os.environ["WANDB_WATCH"]="false"
-    WANDB_RUN_NAME = f"{args.dataset_name}-{args.run_name}-{args.seed}"
+    RUN_NAME = f"{args.dataset_name}-{args.run_name}-{args.seed}"
+    SAVE_DIR = Path(args.output_dir)
+    SAVE_DIR.mkdir(exist_ok=True)
+    HF_SAVE_DIR = SAVE_DIR / RUN_NAME
 
     system_threads = torch.get_num_threads()
     running_threads = args.n_threads
@@ -120,7 +124,7 @@ if __name__ == '__main__':
 
     training_args = TrainingArguments(
         seed=args.seed,
-        output_dir=args.output_dir,
+        output_dir=HF_SAVE_DIR,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
         dataloader_num_workers=args.dataloader_workers,
@@ -144,7 +148,7 @@ if __name__ == '__main__':
         save_total_limit=3,
         push_to_hub=False,
         save_safetensors=save_safetensors,
-        run_name=WANDB_RUN_NAME,
+        run_name=RUN_NAME,
         report_to="wandb" if args.report_to_wandb else "none"
     )
 
