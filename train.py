@@ -1,6 +1,7 @@
 import wandb
 import os
 import argparse
+import torch
 from dataset import ViVQADataset, OpenViVQADataset
 from models import SimpleVQAConfig, SimpleVQA
 from transformers import (
@@ -51,12 +52,19 @@ if __name__ == '__main__':
                         help='Output directory for model checkpoints (default: %(default)s)')
     parser.add_argument('--run_name', type=str, default='run',
                         help='Name of the run (default: %(default)s)')
+    parser.add_argument('--n_threads', type=int, default=4,
+                        help='Number of threads for torch (default: %(default)s)')
     args = parser.parse_args()
 
     os.environ["WANDB_PROJECT"]=args.wandb_name
     os.environ["WANDB_LOG_MODEL"]="false"
     os.environ["WANDB_WATCH"]="false"
     WANDB_RUN_NAME = f"{args.dataset_name}-{args.run_name}-{args.seed}"
+
+    if args.num_threads > torch.get_num_threads():
+        n_threads = args.num_threads
+    torch.set_num_threads(n_threads)
+    torch.set_num_interop_threads(n_threads)
 
     vis_model_name = args.vis_model_name
     text_model_name = args.text_model_name
