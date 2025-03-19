@@ -72,7 +72,7 @@ class SimpleVQA(BaseVQA):
                 question_input_ids: Tensor, 
                 question_attention_mask: Tensor, 
                 labels: Optional[torch.Tensor] = None,
-                ) -> Tensor:
+                ) -> dict:
         vis_features = self.vis_encoder({
             "pixel_values": image
         })

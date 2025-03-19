@@ -24,6 +24,11 @@ class BaseClassifier(nn.Module):
 class BaseVQA(nn.Module):
     def __init__(self):
         super(BaseVQA, self).__init__()
-    def forward(self, image_inputs: Tensor, text_inputs: Tensor) -> Tensor:
+    def forward(self,
+                image: Tensor, 
+                question_input_ids: Tensor, 
+                question_attention_mask: Tensor, 
+                labels: Tensor | None = None
+                ) -> dict:
         raise NotImplementedError
 
