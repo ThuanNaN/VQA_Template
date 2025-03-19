@@ -104,6 +104,10 @@ if __name__ == '__main__':
     )
     model = SimpleVQA(config)
 
+    save_safetensors = True
+    if args.text_model_name in ['vinai/bartpho-syllable-base', 'vinai/bartpho-syllable']:
+        save_safetensors = False
+
     training_args = TrainingArguments(
         seed=args.seed,
         output_dir=args.output_dir,
@@ -129,6 +133,7 @@ if __name__ == '__main__':
         logging_steps=args.logging_steps,
         save_total_limit=3,
         push_to_hub=False,
+        save_safetensors=save_safetensors,
         run_name=WANDB_RUN_NAME,
         report_to="wandb" if args.report_to_wandb else "none"
     )
