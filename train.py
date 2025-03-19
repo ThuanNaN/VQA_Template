@@ -56,6 +56,7 @@ if __name__ == '__main__':
     os.environ["WANDB_PROJECT"]=args.wandb_name
     os.environ["WANDB_LOG_MODEL"]="false"
     os.environ["WANDB_WATCH"]="false"
+    WANDB_RUN_NAME = f"{args.dataset_name}-{args.run_name}"
 
     vis_model_name = args.vis_model_name
     text_model_name = args.text_model_name
@@ -128,7 +129,7 @@ if __name__ == '__main__':
         logging_steps=args.logging_steps,
         save_total_limit=3,
         push_to_hub=False,
-        run_name=args.run_name,
+        run_name=WANDB_RUN_NAME,
         report_to="wandb" if args.report_to_wandb else "none"
     )
 
