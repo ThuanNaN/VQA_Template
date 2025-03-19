@@ -61,10 +61,12 @@ if __name__ == '__main__':
     os.environ["WANDB_WATCH"]="false"
     WANDB_RUN_NAME = f"{args.dataset_name}-{args.run_name}-{args.seed}"
 
-    if args.num_threads > torch.get_num_threads():
-        n_threads = args.num_threads
-    torch.set_num_threads(n_threads)
-    torch.set_num_interop_threads(n_threads)
+    system_threads = torch.get_num_threads()
+    running_threads = args.n_threads
+    if running_threads > system_threads:
+        running_threads = system_threads
+    torch.set_num_threads(running_threads)
+    torch.set_num_interop_threads(running_threads)
 
     vis_model_name = args.vis_model_name
     text_model_name = args.text_model_name
