@@ -175,6 +175,7 @@ data/openvivqa/
 data/vivqa/
 
 *.tsv
+*.sh
 test.ipynb
-vqa_outputs/
+runs/
 wandb/
