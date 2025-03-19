@@ -52,7 +52,7 @@ if __name__ == '__main__':
                         help='Output directory for model checkpoints (default: %(default)s)')
     parser.add_argument('--run_name', type=str, default='run',
                         help='Name of the run (default: %(default)s)')
-    parser.add_argument('--n_threads', type=int, default=4,
+    parser.add_argument('--n_threads', type=int, default=8,
                         help='Number of threads for torch (default: %(default)s)')
     args = parser.parse_args()
 
