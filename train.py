@@ -56,7 +56,7 @@ if __name__ == '__main__':
     os.environ["WANDB_PROJECT"]=args.wandb_name
     os.environ["WANDB_LOG_MODEL"]="false"
     os.environ["WANDB_WATCH"]="false"
-    WANDB_RUN_NAME = f"{args.dataset_name}-{args.run_name}"
+    WANDB_RUN_NAME = f"{args.dataset_name}-{args.run_name}-{args.seed}"
 
     vis_model_name = args.vis_model_name
     text_model_name = args.text_model_name
