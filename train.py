@@ -95,22 +95,22 @@ if __name__ == '__main__':
         )
     elif args.dataset_name == 'OpenViVQA':
         train_dataset = OpenViVQADataset(
-            ann_path="data/openvivqa/train.csv",
-            img_dir="data/openvivqa/images",
+            ann_path="data/openvivqa/vlsp2023_train_data.json",
+            img_dir="data/openvivqa/training-images",
             text_processor=text_processor,
             vis_processor=vis_processor,
             max_length=args.seq_len
         )
         val_dataset = OpenViVQADataset(
-            ann_path="data/openvivqa/test.csv",
-            img_dir="data/openvivqa/images",
+            ann_path="data/openvivqa/vlsp2023_dev_data.json",
+            img_dir="data/openvivqa/dev-images",
             text_processor=text_processor,
             vis_processor=vis_processor,
             max_length=args.seq_len
         )
     else:
         raise ValueError("Dataset name not found")
-    
+
     config = SimpleVQAConfig(
         vis_model_name=vis_model_name,
         text_model_name=text_model_name,
