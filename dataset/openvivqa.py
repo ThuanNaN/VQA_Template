@@ -63,11 +63,13 @@ class OpenViVQADataset(BaseDataset):
         question_words = question.split()
 
         # Generate all possible continuous sequences from the question
+        # Only consider sequences of 3+ words to avoid removing important semantic content
         sequences = set()
         for i in range(len(question_words)):
             for j in range(i + 1, len(question_words) + 1):
                 sequence = ' '.join(question_words[i:j])
-                if len(question_words[i:j]) > 1:
+                # Only consider sequences of 3+ words for removal
+                if len(question_words[i:j]) >= 3:
                     sequences.add(sequence)
 
         # Remove sequences from the answer that match any sequence in the question
