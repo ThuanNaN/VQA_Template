@@ -33,7 +33,7 @@ python create_vivqa_image.py
 - Visulize bbox
 
 ```bash
-python vis_bbox.py --host 0.0.0.0 --port7860
+python vis_bbox.py --host 0.0.0.0 --port 7860
 ```
 
 ## Dataset

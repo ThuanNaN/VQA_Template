@@ -22,6 +22,14 @@ ViVQA:
   path_save: ./vivqa
   download_type: "git"
 
+ViVQA-X:
+  url: https://huggingface.co/datasets/VLAI-AIVN/ViVQA-X
+  path_save: ./vivqa-x
+  download_type: "huggingface"
+  cmd: [
+    "rm -r ./vivqa-x/images",
+  ]
+
 
 OpenViVQA:
   url: https://huggingface.co/datasets/uitnlp/OpenViVQA-dataset

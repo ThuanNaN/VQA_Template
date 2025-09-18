@@ -3,13 +3,15 @@ from pathlib import Path
 import wandb
 import argparse
 import torch
-from dataset import ViVQADataset, OpenViVQADataset
+from dataset import ViVQADataset, OpenViVQADataset, ViVQAXDataset, CombinedDataset
 from models import SimpleVQAConfig, SimpleVQA
 from transformers import (
     AutoTokenizer, AutoProcessor, 
-    TrainingArguments, Trainer, EarlyStoppingCallback
+    TrainingArguments, EarlyStoppingCallback
 )
+import matplotlib.pyplot as plt
 from utils import compute_metrics
+import time
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -21,7 +23,7 @@ if __name__ == '__main__':
                         help='Text model name (default: %(default)s)')
     parser.add_argument('--seed', type=int, default=71,
                         help='random seed (default: %(default)s)')
-    parser.add_argument('--dataset_name', type=str, default='ViVQA', choices=['ViVQA', 'OpenViVQA'],
+    parser.add_argument('--dataset_name', type=str, default='ViVQA-X', choices=['ViVQA', 'OpenViVQA', 'ViVQA-X'],
                         help='Dataset name (default: %(default)s)')
     parser.add_argument('--batch_size', type=int, default=64,
                         help='Mini-batch size for each iteration (default: %(default)s)')
@@ -55,6 +57,8 @@ if __name__ == '__main__':
                         help='Name of the run (default: %(default)s)')
     parser.add_argument('--n_threads', type=int, default=8,
                         help='Number of threads for torch (default: %(default)s)')
+    parser.add_argument('--use_sap_combined', type=bool, default=False,
+                        help='Use CombinedDataset that automatically includes SapAugmented data if available')
     args = parser.parse_args()
 
     os.environ["WANDB_PROJECT"]=args.wandb_name
@@ -63,7 +67,7 @@ if __name__ == '__main__':
     RUN_NAME = f"{args.dataset_name}-{args.run_name}-{args.seed}"
     SAVE_DIR = Path(args.output_dir)
     SAVE_DIR.mkdir(exist_ok=True)
-    HF_SAVE_DIR = SAVE_DIR / RUN_NAME
+    HF_SAVE_DIR = SAVE_DIR / f"{RUN_NAME}_{int(time.time())}"
 
     system_threads = torch.get_num_threads()
     running_threads = args.n_threads
@@ -78,38 +82,131 @@ if __name__ == '__main__':
     vis_processor = AutoProcessor.from_pretrained(vis_model_name, use_fast=True)
     text_processor = AutoTokenizer.from_pretrained(text_model_name)
 
-    if args.dataset_name == 'ViVQA':
-        train_dataset = ViVQADataset(
-            ann_path="data/vivqa/train.csv",
-            img_dir="data/vivqa/images",
-            text_processor=text_processor,
-            vis_processor=vis_processor,
-            max_length=args.seq_len
-        )
-        val_dataset = ViVQADataset(
-            ann_path="data/vivqa/test.csv",
-            img_dir="data/vivqa/images",
-            text_processor=text_processor,
-            vis_processor=vis_processor,
-            max_length=args.seq_len
-        )
-    elif args.dataset_name == 'OpenViVQA':
-        train_dataset = OpenViVQADataset(
-            ann_path="data/openvivqa/vlsp2023_train_data.json",
-            img_dir="data/openvivqa/training-images",
-            text_processor=text_processor,
-            vis_processor=vis_processor,
-            max_length=args.seq_len
-        )
-        val_dataset = OpenViVQADataset(
-            ann_path="data/openvivqa/vlsp2023_dev_data.json",
-            img_dir="data/openvivqa/dev-images",
-            text_processor=text_processor,
-            vis_processor=vis_processor,
-            max_length=args.seq_len
-        )
+    # Use CombinedDataset if requested
+    if args.use_sap_combined:
+        # Load original datasets first
+        if args.dataset_name == 'ViVQA':
+            original_train_dataset = ViVQADataset(
+                ann_path="data/vivqa/train.csv",
+                img_dir="data/vivqa/images",
+                text_processor=text_processor,
+                vis_processor=vis_processor,
+                max_length=args.seq_len
+            )
+            
+            # Create combined dataset with augmented data
+            train_dataset = CombinedDataset(
+                original_dataset=original_train_dataset,
+                augmented_ann_path="augmented_datasets/ViVQA_sap_augmented.json",
+                text_processor=text_processor,
+                vis_processor=vis_processor,
+                max_length=args.seq_len
+            )
+            
+            # Validation dataset remains original
+            val_dataset = ViVQADataset(
+                ann_path="data/vivqa/test.csv",
+                img_dir="data/vivqa/images",
+                text_processor=text_processor,
+                vis_processor=vis_processor,
+                max_length=args.seq_len
+            )
+
+        elif args.dataset_name == 'OpenViVQA':
+            original_train_dataset = OpenViVQADataset(
+                ann_path="data/openvivqa/vlsp2023_train_data.json",
+                img_dir="data/openvivqa/train-images",
+                text_processor=text_processor,
+                vis_processor=vis_processor,
+                max_length=args.seq_len
+            )
+            
+            
+            train_dataset = CombinedDataset(
+                original_dataset=original_train_dataset,
+                augmented_ann_path="augmented_datasets/OpenViVQA_sap_augmented.json",
+                text_processor=text_processor,
+                vis_processor=vis_processor,
+                max_length=args.seq_len
+            )
+            
+            val_dataset = OpenViVQADataset(
+                ann_path="data/openvivqa/vlsp2023_dev_data.json",
+                img_dir="data/openvivqa/dev-images",
+                text_processor=text_processor,
+                vis_processor=vis_processor,
+                max_length=args.seq_len
+            )
+        elif args.dataset_name == 'ViVQA-X':
+            original_train_dataset = ViVQAXDataset(
+                ann_path="data/vivqa-x/ViVQA-X_train.json",
+                img_dir="data/MSCOCO/train2014",
+                text_processor=text_processor,
+                vis_processor=vis_processor,
+                max_length=args.seq_len
+            )
+            
+            train_dataset = CombinedDataset(
+                original_dataset=original_train_dataset,
+                augmented_json_path="augmented_datasets/ViVQA-X_sap_augmented.json",
+            )
+
+            val_dataset = ViVQAXDataset(
+                ann_path="data/vivqa-x/ViVQA-X_val.json",
+                img_dir="data/MSCOCO/val2014",
+                text_processor=text_processor,
+                vis_processor=vis_processor,
+                max_length=args.seq_len
+            )
     else:
-        raise ValueError("Dataset name not found")
+        # Original dataset loading logic
+        if args.dataset_name == 'ViVQA':
+            train_dataset = ViVQADataset(
+                ann_path="data/vivqa/train.csv",
+                img_dir="data/vivqa/images",
+                text_processor=text_processor,
+                vis_processor=vis_processor,
+                max_length=args.seq_len
+            )
+            val_dataset = ViVQADataset(
+                ann_path="data/vivqa/test.csv",
+                img_dir="data/vivqa/images",
+                text_processor=text_processor,
+                vis_processor=vis_processor,
+                max_length=args.seq_len
+            )
+        elif args.dataset_name == 'OpenViVQA':
+            train_dataset = OpenViVQADataset(
+                ann_path="data/openvivqa/vlsp2023_train_data.json",
+                img_dir="data/openvivqa/training-images",
+                text_processor=text_processor,
+                vis_processor=vis_processor,
+                max_length=args.seq_len
+            )
+            val_dataset = OpenViVQADataset(
+                ann_path="data/openvivqa/vlsp2023_dev_data.json",
+                img_dir="data/openvivqa/dev-images",
+                text_processor=text_processor,
+                vis_processor=vis_processor,
+                max_length=args.seq_len
+            )
+        elif args.dataset_name == 'ViVQA-X':
+            train_dataset = ViVQAXDataset(
+                ann_path="data/vivqa-x/ViVQA-X_train.json",
+                img_dir="data/MSCOCO/train2014",
+                text_processor=text_processor,
+                vis_processor=vis_processor,
+                max_length=args.seq_len
+            )
+            val_dataset = ViVQAXDataset(
+                ann_path="data/vivqa-x/ViVQA-X_val.json",
+                img_dir="data/MSCOCO/val2014",
+                text_processor=text_processor,
+                vis_processor=vis_processor,
+                max_length=args.seq_len
+            )
+        else:
+            raise ValueError("Dataset name not found")
 
     config = SimpleVQAConfig(
         vis_model_name=vis_model_name,
@@ -154,6 +251,7 @@ if __name__ == '__main__':
 
     early_stopping = EarlyStoppingCallback(args.patience)
 
+    from transformers import Trainer
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -163,5 +261,32 @@ if __name__ == '__main__':
         callbacks=[early_stopping],
     )
 
-    trainer.train()
+    trainer.train() 
+
+    logs = trainer.state.log_history
+    train_loss = [log["loss"] for log in logs if "loss" in log]
+    eval_loss = [log["eval_loss"] for log in logs if "eval_loss" in log]
+    eval_accuracy = [log["eval_accuracy"] for log in logs if "eval_accuracy" in log]
+    epochs = range(1, len(eval_loss) + 1)
+
+    plt.figure(figsize=(10,5))
+    plt.plot(range(1, len(train_loss)+1), train_loss, label="Train Loss")
+    plt.plot(epochs, eval_loss, label="Eval Loss")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.title("Training vs Evaluation Loss")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(HF_SAVE_DIR / "loss_curve.png")
+    plt.close()
+
+    plt.figure(figsize=(10,5))
+    plt.plot(epochs, eval_accuracy, label="Eval Accuracy", marker="o")
+    plt.xlabel("Epoch")
+    plt.ylabel("Accuracy")
+    plt.title("Evaluation Accuracy")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(HF_SAVE_DIR / "accuracy_curve.png")
+    plt.close()
     wandb.finish()

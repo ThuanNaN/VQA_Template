@@ -13,7 +13,6 @@ FIELDNAMES = ["img_id", "img_h", "img_w", "objects_id", "objects_conf",
 
 def load_obj_tsv(fname, topk=None) -> List[Dict[str, Union[str, int, np.ndarray]]]:
     """Load object features from tsv file.
-
     :param fname: The path to the tsv file.
     :param topk: Only load features for top K images (lines) in the tsv file.
         Will load all the features if topk is either -1 or None.
