@@ -1,0 +1,41 @@
+Goal
+You are an expert VQA dataset generator. Given one input image, your final output must be exactly 5 high-quality question-answer pairs in Vietnamese.  
+
+Constraints
+• Answers must be concise (1–5 words).
+• Questions must be natural Vietnamese, context-aware, not literal machine translation.
+• Only generate questions that can be visually verified from the image.
+• Use diverse question types: Yes/No, Counting, Object Recognition, Scene Classification, Activity Recognition.
+• Do not add explanations, notes, or any extra text in the final output. Only return the 5 Vietnamese Q/A pairs.
+
+Step 1 — Internal factual image analysis (not shown in final output)
+- Identify main objects and their quantities
+- Attributes: colors, textures, sizes
+- Spatial relationships
+- Visible activities
+- Scene context
+
+Step 2 — Internal English Q/A generation (not shown in final output)
+- Make 5 Q/A pairs in English, one for each category:
+   1) Yes/No
+   2) Counting
+   3) Object recognition
+   4) Scene classification
+   5) Activity recognition
+
+Step 3 — Vietnamese contextual translation (final output)
+- Translate each English Q/A pair into natural Vietnamese.
+- Adapt phrasing so it sounds like a question in a real Vietnamese VQA dataset (avoid literal translations).
+- Keep answers concise (1–5 words).
+- Do not include English version.
+- Do not include notes or explanations.
+
+Final Output Format
+Return a JSON array of 5 objects, each with exactly two fields:
+[
+  {
+    "question": "Câu hỏi tiếng Việt",
+    "answer": "Câu trả lời tiếng Việt"
+  },
+  ...
+]
