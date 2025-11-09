@@ -6,19 +6,19 @@ from .translator import Translator
 from .models.output_question import ListQuestions
 
 class VlmAugmentClient:
-    def __init__(self, api_key):
+    def __init__(self, api_key: str):
         self.api_key = api_key
         self.client = litellm
 
-    def generate_questions(self, image_path: str,) -> str:
+    def generate_questions(self, image_path: str, prompt_name: str) -> str:
         # Load and convert the image to base64
         image_url = self._encode_image(image_path)
         
         # Load system prompt
-        system_prompt = self._load_prompt("vqa_aug_system_EN")
+        system_prompt = self._load_prompt(prompt_name)
 
         response = self.client.completion(
-            model = "ollama/qwen2.5vl:7b",
+            model = "gemini/gemini-flash-lite-latest",
             messages=[
                 {
                     "role": "system",
@@ -40,7 +40,9 @@ class VlmAugmentClient:
                                 ]
                 }
             ],
-            response_format=ListQuestions
+            response_format=ListQuestions,
+            temperature=1,
+            api_key=self.api_key
             )
         return response.choices[0].message.content
     
@@ -64,11 +66,14 @@ class VlmAugmentClient:
 #     client = VlmAugmentClient(api_key="your_api_key_here")
 #     translator = Translator()
 #     response = client.generate_questions(image_path="../data/MSCOCO/train2014/COCO_train2014_000000000030.jpg")
+#     print(response)
 #     # try:
-#     #     list_qa = json.loads(response)
-#     #     result = translator.translate_qa_pairs(list_qa, src_lang="en")
-#     #     print(response)
-#     #     print(result)
-#     # except json.JSONDecodeError:
-#     #     print(response)
+# #     #     list_qa = json.loads(response)
+# #     #     result = translator.translate_qa_pairs(list_qa, src_lang="en")
+# #     #     print(response)
+# #     #     print(result)
+# #     # except json.JSONDecodeError:
+# #     #     print(response)
    
+   
+

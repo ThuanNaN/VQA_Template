@@ -8,24 +8,18 @@ class CombinedDataset(BaseDataset):
     Dataset class that combines an original dataset with SapAugmented data.
     """
     
-    def __init__(self, original_dataset, augmented_json_path=None, augmented_dir="augmented_datasets", dataset_name=None):
+    def __init__(self, original_dataset, augmented_json_path=None):
         """
         Initialize Combined dataset by combining original dataset with augmented data.
         
         Args:
             original_dataset: Instance of BaseDataset (ViVQADataset, OpenViVQADataset, ViVQAXDataset)
             augmented_json_path: Direct path to augmented JSON file (optional)
-            augmented_dir: Directory containing augmented datasets (default: "augmented_datasets")
-            dataset_name: Dataset name for auto-detecting augmented file ('ViVQA', 'OpenViVQA', 'ViVQA-X')
         """
         self.original_dataset = original_dataset
         self.text_processor = original_dataset.text_processor
         self.vis_processor = original_dataset.vis_processor
         self.kwargs = original_dataset.kwargs
-        
-        # Auto-detect augmented file path if not provided
-        if augmented_json_path is None and dataset_name is not None:
-            augmented_json_path = os.path.join(augmented_dir, f"{dataset_name}_sap_augmented.json")
         
         self.augmented_json_path = augmented_json_path
         
@@ -74,9 +68,8 @@ class CombinedDataset(BaseDataset):
             print(f"   Will use only original dataset for training")
         
         original_count = sum(1 for x in combined_data if x['source'] == 'original')
-        augmented_count = sum(1 for x in combined_data if x['source'] == 'sap_augmented')
-        
-        print(f"🔄 Combined dataset loaded:")
+        augmented_count = sum(1 for x in combined_data if x['source'] == 'sap_augmented')        
+        print(f"✅ Combined dataset statistics:")
         print(f"   Original samples: {original_count}")
         print(f"   Augmented samples: {augmented_count}")
         print(f"   Total samples: {len(combined_data)}")
@@ -109,71 +102,6 @@ class CombinedDataset(BaseDataset):
             "augmented_samples": augmented_count,
             "augmentation_ratio": augmented_count / len(self.combined_data) if len(self.combined_data) > 0 else 0
         }
-
-class CombinedDatasetFromFile(BaseDataset):
-    """
-    Dataset class for loading pre-combined dataset from a single JSON file.
-    """
-    
-    def __init__(self, ann_path, img_dir, text_processor, vis_processor, **kwargs):
-        """
-        Initialize Combined dataset from pre-combined file.
-        
-        Args:
-            ann_path: Path to the pre-combined JSON file
-            img_dir: Directory containing images  
-            text_processor: Text tokenizer
-            vis_processor: Vision processor
-        """
-        self.img_dir = img_dir
-        self.text_processor = text_processor
-        self.vis_processor = vis_processor
-        self.kwargs = kwargs
-        
-        # Load combined data
-        self.combined_data = self.load_combined_data(ann_path)
-        
-        # Get label encoder from the combined data
-        self.label_encoder = self.get_label_encoder()
-        
-        # Process data into the expected format
-        self.data = self.process_data()
-    
-    def load_combined_data(self, ann_path):
-        """Load the pre-combined JSON file."""
-        with open(ann_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        return data
     
     def get_label_encoder(self):
-        """Create label encoder from all answers in the dataset."""
-        all_answers = [item['answer'] for item in self.combined_data]
-        unique_answers = sorted(set(all_answers))
-        return {answer: i for i, answer in enumerate(unique_answers)}
-    
-    def process_data(self):
-        """Process combined data into the format expected by BaseDataset."""
-        processed_data = {
-            "img_paths": [],
-            "questions": [],
-            "answers": []
-        }
-        
-        for item in self.combined_data:
-            processed_data["img_paths"].append(item['img_path'])
-            processed_data["questions"].append(item['question'])
-            processed_data["answers"].append(item['answer'])
-        
-        return processed_data
-    
-    def get_augmentation_stats(self):
-        """Get statistics about the augmentation in the dataset."""
-        original_count = sum(1 for item in self.combined_data if item.get('source') == 'original')
-        augmented_count = sum(1 for item in self.combined_data if item.get('source') == 'sap_augmented')
-        
-        return {
-            "total_samples": len(self.combined_data),
-            "original_samples": original_count,
-            "augmented_samples": augmented_count,
-            "augmentation_ratio": augmented_count / len(self.combined_data) if len(self.combined_data) > 0 else 0
-        }
+        return self.original_dataset.get_label_encoder()

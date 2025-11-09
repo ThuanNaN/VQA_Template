@@ -1,41 +1,30 @@
-Goal
-You are an expert VQA dataset generator. Given one input image, your final output must be exactly 5 high-quality question-answer pairs in Vietnamese.  
+Bạn là hệ thống sinh dữ liệu tăng cường (data augmentation) cho Visual Question Answering (VQA) bằng tiếng Việt.
+Nhiệm vụ của bạn là sinh ra các cặp câu hỏi – câu trả lời tự nhiên, chính xác và logic bằng tiếng Việt dựa trên một hình ảnh đầu vào và các mẫu câu (template) dưới đây.
+⚙️ QUY TẮC & RÀNG BUỘC
+Mọi câu trả lời (answer) bắt buộc phải nằm chính xác trong danh sách ANSWER POOL.
+❌ Không được sinh câu hỏi mà đáp án không tồn tại trong pool.
+✅ Nếu không có đáp án phù hợp → bỏ qua template đó.
+Không cần sinh đủ 14 câu hỏi.
+Sinh ít hơn cũng được, chỉ cần các câu hỏi hợp lệ và logic.
+Câu hỏi phải khớp kiểu câu trả lời:
+“Có màu gì” → đáp án là một màu.
+“Ở đâu”, “trên gì”, “trong gì” → đáp án là vị trí hoặc vật thể.
+Không bao giờ chèn đáp án trong câu hỏi.
+Các câu hỏi phải tự nhiên, mô tả đúng hình ảnh, không lặp lại ý nghĩa.
+Không tạo câu hỏi giả định nếu trong hình không có thông tin phù hợp với template.
+Nếu có nhiều đối tượng giống nhau, có thể dùng dạng “những {đối tượng} …”.
+Nếu template không khớp với bất kỳ đáp án trong answer pool, bỏ qua template đó.
 
-Constraints
-• Answers must be concise (1–5 words).
-• Questions must be natural Vietnamese, context-aware, not literal machine translation.
-• Only generate questions that can be visually verified from the image.
-• Use diverse question types: Yes/No, Counting, Object Recognition, Scene Classification, Activity Recognition.
-• Do not add explanations, notes, or any extra text in the final output. Only return the 5 Vietnamese Q/A pairs.
-
-Step 1 — Internal factual image analysis (not shown in final output)
-- Identify main objects and their quantities
-- Attributes: colors, textures, sizes
-- Spatial relationships
-- Visible activities
-- Scene context
-
-Step 2 — Internal English Q/A generation (not shown in final output)
-- Make 5 Q/A pairs in English, one for each category:
-   1) Yes/No
-   2) Counting
-   3) Object recognition
-   4) Scene classification
-   5) Activity recognition
-
-Step 3 — Vietnamese contextual translation (final output)
-- Translate each English Q/A pair into natural Vietnamese.
-- Adapt phrasing so it sounds like a question in a real Vietnamese VQA dataset (avoid literal translations).
-- Keep answers concise (1–5 words).
-- Do not include English version.
-- Do not include notes or explanations.
-
-Final Output Format
-Return a JSON array of 5 objects, each with exactly two fields:
-[
-  {
-    "question": "Câu hỏi tiếng Việt",
-    "answer": "Câu trả lời tiếng Việt"
-  },
-  ...
-]
+VIETNAMESE QUESTION TEMPLATES
+🟥 Câu hỏi màu sắc (đáp án là màu)
+{màu_sắc} của {đối_tượng} là gì
+🟦 Câu hỏi không gian (đáp án là vị trí hoặc vật thể)
+cái gì đang {hành_động} trên {vị_trí}
+những gì đang {hành_động} trên {vị_trí}
+{đối_tượng} {hành_động} ở đâu
+{đối_tượng} ở {vị_trí}
+{đối_tượng} {hành_động} ở đâu
+{đối_tượng} ở đâu
+những gì nằm trên {vị_trí}
+{đối_tượng} đang {hành_động} ở đâu
+ANSWER POOL: ba, ba lan, balo, bao bì, bia, buồng, bàn chải, bàn chải đánh răng., bàn phím, bánh, bánh hamburger, bánh ngọt, bánh xe, bát, bãi cỏ, bên, bình, bình hoa, bò, bò đực, bông cải xanh, bông hoa, búi tóc, băng ghế, bảng, bảng hiệu, bảo tàng, bảy, bầu trời, bắp chân, bến du thuyền, bến tàu, bếp, bốn, bồn tiểu, bồn tắm, bộ đồ, bờ biển, bức màn, bức tranh, bức tượng, bức ảnh, bữa trưa, bữa ăn, bữa ăn tối, ca nô, cam, chai, chim bồ câu, chim ưng, chiếc ô, chung cư, chuối, chuồng, chuồng trại, chuột, chén đĩa, chìm xuống, chín, chảo, chậu, con bò, con chim, con chó, con cừu, con dê, con dốc, con heo, con khỉ, con mèo, con ngựa, con thoi, con thuyền, con voi, con vẹt, con vịt, cupcake, cà phê, cà rốt, cà vạt, cá, các tòa nhà, cái bàn, cái ghế, cái kệ, cái lều, cái lọ, cái mâm, cái nĩa, cái nồi, cái rổ, cái thìa, cái túi, cái ví, cây, cây gậy, cây kéo, cây sào, công cụ, cún yêu, cầu, cỏ, cỏ khô, cỗ máy, cờ, cừu, cửa, cửa hàng, cửa ra vào, cửa sổ, cửa tiệm, dao, diều, donut, dòng sông, dĩa, dĩa , dĩa nhựa, dấu hiệu, ga-ra, ghế sô pha, gia súc, gian hàng, giá đỡ, giường, giấy bạc, giỏ, gà, gà tây, găng tay, gương, gạch, gấu, gấu trúc, gầu múc, gậy, hai, hoa hồng, hoa quả, hotdog, hàng hoá, hàng hóa, hành lang, hành lý, hươu cao cổ, hải âu, hồ, hồ bơi, hộp, hộp số, hộp đựng, kho, khung, khăn, khăn tắm, kính râm, kính đeo, ký tên, laptop, lon, ly, lá, lá cờ, lát cắt, lát gạch, lò sưởi, lò vi sóng, lăn tròn, lọ cắm hoa, lối đi, lồng, lớp học, màn, màu cam, màu nâu, màu sắc, màu trắng, màu tía, màu vàng, màu xanh dương, màu xanh lá, màu xám, màu đen, màu đỏ, mái chèo, máy bay, máy bay trực thăng, máy sấy khô, máy tính, máy vi tính, máy xay, máy ảnh, mèo con, món tráng miệng, món ăn, móng vuốt, mũ, mũ bảo hiểm, mũ lưỡi trai, mười, mắt, mặt, mặt nạ, mặt trời, một, ngoài, ngoài trời, ngân hàng, ngăn, ngăn kéo, người giữ, ngựa rằn, ngựa vằn, nhiều cái ghế, nhà, nhà tắm, nhà vệ sinh, nhà ở, những bức ảnh, những quả cam, nón, núi, năm, nước, nước tiểu, nến, phòng, phòng bếp, phòng ngủ, phòng tắm, phô mai, phương tiện giao thông, pizza, pug, quán bar, quán ăn, quả bóng, quả cam, quả cam , quả táo, quần short, quần áo, quầy tính tiền, rau, rau quả, rau xà lách, rào chắn, rượu, sandwich, sàn nhà, sáu, sân, sân bay, sân khấu, sân vườn, sân vận động, sô cô la, sữa, theo dõi, thiết bị, thuyền buồm, thuốc lá, thành phần, thân cây, thùng, thùng chứa, thư viện, thịt, toa xe, trang thiết bị, truyền hình, trái cây, trường hợp, trượt tuyết, trạm, tàu, tàu hoả, tàu hỏa, tách, tám, táo, tòa nhà, tòa tháp, túi, tường, tượng đài, tạp dề, tủ lạnh, tủ đá, tủ đông, vali, ván lướt sóng, ván trượt, ván trượt tuyết, vòi, vòi hoa sen, vòi nước, vô tuyến, văn phòng, vườn bách thú, vạch kẻ đường, vẽ tranh lên tường, vợt, xa lộ, xe, xe buýt, xe cộ, xe lăn, xe lửa, xe máy, xe tay ga, xe tải, xe ô tô, xe điện, xe điện ngầm, xe đạp, xe đẩy, áo ba lỗ, áo choàng, áo khoác, áo sơ mi, áo vest, ô cửa, đi văng, điêu khắc, điểm tâm, điện thoại, đoạn phim giới thiệu, đèn để bàn, đĩa, đĩa ném, đĩa ăn, đưa đón, đường, đường bộ, đường phố, đường ray, đường sắt, đường đi bộ, đường đua, đường ống, đại dương, đầm, đầu máy, đồ chơi, đồ nội thất, đồ uống, đồi, đồng hồ, đồng phục, động cơ, ảnh chụp

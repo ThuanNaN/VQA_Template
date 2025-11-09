@@ -170,9 +170,18 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
+# API Keys (sensitive)
+api_keys.txt
+
+# Data directories
 data/MSCOCO/
 data/openvivqa/
 data/vivqa/
+
+# Output directories
+simple_augmented_datasets/
+augmented_datasets/
+template_extraction/data/
 
 *.tsv
 *.sh
