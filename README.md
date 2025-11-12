@@ -43,13 +43,6 @@ python download.py
 python vis_bbox.py --host 0.0.0.0 --port 7860
 ```
 
-- Vietnamese Rule-Based Data Augmentation
-
-```bash
-cd examples
-python test_augmentation.py
-```
-
 See [docs/AUGMENTATION.md](docs/AUGMENTATION.md) for detailed documentation on using the Vietnamese rule-based augmentation system.
 
 ## Dataset
