@@ -291,7 +291,7 @@ class MaskedImageAugmentation(BaseImageAugmentation):
             Dictionary with augmentation parameters
         """
         return {
-            "difficulty": self.difficulty.value,
+            "difficulty": self.difficulty,
             "patch_size": self.patch_size,
             "mask_ratio": self.mask_ratio,
             "color_jitter_strength": self.color_jitter_strength,

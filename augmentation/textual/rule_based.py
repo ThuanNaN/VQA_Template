@@ -252,7 +252,7 @@ class RuleBasedTextAugmentation(BaseTextAugmentation):
         """Get augmentation configuration info."""
         return {
             'type': 'RuleBasedTextAugmentation',
-            'difficulty': self.difficulty.value,
+            'difficulty': self.difficulty,
             'apply_prob': self.apply_prob,
             'max_replacements': self.max_replacements,
             'num_rules': len(self.all_synonyms),

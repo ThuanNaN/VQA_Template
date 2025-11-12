@@ -328,7 +328,7 @@ for epoch in range(total_epochs):
         seed=42
     )
     
-    print(f"Epoch {epoch}: {difficulty.value} difficulty")
+    print(f"Epoch {epoch}: {difficulty} difficulty")
     
     # Your training code here
     for batch in dataloader:

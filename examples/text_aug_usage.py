@@ -105,7 +105,7 @@ def demonstrate_vivqa_augmentation_with_images():
             result_entry = {
                 'img_id': img_id,
                 'img_path': img_path,
-                'difficulty': difficulty.value,
+                'difficulty': difficulty,
                 'original_question': original_question,
                 'augmented_question': augmented_question,
                 'answer': answer,
@@ -123,10 +123,10 @@ def demonstrate_vivqa_augmentation_with_images():
             print(f"  Answer: {answer}")
         
         # Save difficulty-specific results
-        difficulty_output_path = os.path.join(output_dir, f"vivqa_augmented_{difficulty.value}.json")
+        difficulty_output_path = os.path.join(output_dir, f"vivqa_augmented_{difficulty}.json")
         with open(difficulty_output_path, 'w', encoding='utf-8') as f:
             json.dump(difficulty_results, f, ensure_ascii=False, indent=2)
-        print(f"\n✓ Saved {difficulty.value} difficulty results to: {difficulty_output_path}")
+        print(f"\n✓ Saved {difficulty} difficulty results to: {difficulty_output_path}")
     
     # Save combined results
     combined_output_path = os.path.join(output_dir, "vivqa_augmented_all.json")
@@ -322,7 +322,7 @@ def demonstrate_curriculum_learning():
         actual_rate = (augmented_count / num_trials) * 100
         expected_rate = info['apply_prob'] * 100
         
-        print(f"  Epoch {epoch:2d} ({difficulty.value:6s}): "
+        print(f"  Epoch {epoch:2d} ({difficulty:6s}): "
               f"Expected {expected_rate:2.0f}% | Actual {actual_rate:2.0f}% augmented")
 
 
@@ -387,7 +387,7 @@ def demonstrate_epoch_based_augmentation():
         augmentor = RuleBasedTextAugmentation(difficulty=difficulty, seed=42)
         
         print(f"\n{'='*50}")
-        print(f"Epoch {epoch} - {difficulty.value.upper()} difficulty")
+        print(f"Epoch {epoch} - {difficulty.upper()} difficulty")
         print(f"{'='*50}")
         
         info = augmentor.get_augmentation_info()
@@ -494,7 +494,7 @@ for epoch in range(total_epochs):
         loss.backward()
         optimizer.step()
     
-    print(f"Epoch {epoch}: {difficulty.value.upper()} augmentation")
+    print(f"Epoch {epoch}: {difficulty} augmentation")
     """)
 
 
