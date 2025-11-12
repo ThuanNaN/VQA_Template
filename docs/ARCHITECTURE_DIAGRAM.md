@@ -63,7 +63,7 @@ classDiagram
         +_random_masking()
     }
 
-    class CurriculumLearningScheduler {
+    class CurriculumScheduler {
         +get_difficulty_for_epoch(epoch)
         +get_schedule_info()
     }
@@ -81,7 +81,7 @@ classDiagram
     AugmentationModule --> BaseTextAugmentation
     AugmentationModule --> AugmentationFactory
     AugmentationModule --> MaskedImageAugmentation
-    AugmentationModule --> CurriculumLearningScheduler
+    AugmentationModule --> CurriculumScheduler
 ```
 
 ## Dataset Module

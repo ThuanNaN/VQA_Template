@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `CurriculumScheduler` provides fine-grained, continuous control over curriculum learning difficulty, similar to learning rate schedulers in deep learning. Unlike the discrete `CurriculumLearningScheduler` which uses three fixed levels (EASY, MEDIUM, HARD), the smooth scheduler returns continuous difficulty values from 0.0 to 1.0.
+The `CurriculumScheduler` provides fine-grained, continuous control over curriculum learning difficulty, similar to learning rate schedulers in deep learning. Unlike the discrete `CurriculumScheduler` which uses three fixed levels (EASY, MEDIUM, HARD), the smooth scheduler returns continuous difficulty values from 0.0 to 1.0.
 
 ## Why Smooth Scheduling?
 
@@ -218,9 +218,9 @@ for epoch in range(50):
 ### When to use Discrete Scheduler
 
 ```python
-from augmentation import CurriculumLearningScheduler
+from augmentation import CurriculumScheduler
 
-scheduler = CurriculumLearningScheduler(
+scheduler = CurriculumScheduler(
     total_epochs=30,
     easy_epochs=10,
     medium_epochs=10,
@@ -236,7 +236,7 @@ scheduler = CurriculumLearningScheduler(
 
 **Can enable smooth mode:**
 ```python
-scheduler = CurriculumLearningScheduler(
+scheduler = CurriculumScheduler(
     total_epochs=30,
     smooth_transition=True  # Returns 0.0, 0.5, 1.0
 )
@@ -302,10 +302,10 @@ CurriculumScheduler(
 - **step**: `step_size=total_epochs//3`, `gamma=0.33` (step increase)
 - **polynomial**: `power=2.0` (exponent)
 
-### CurriculumLearningScheduler (Enhanced)
+### CurriculumScheduler (Enhanced)
 
 ```python
-CurriculumLearningScheduler(
+CurriculumScheduler(
     total_epochs: int,
     easy_epochs: Optional[int] = None,
     medium_epochs: Optional[int] = None,
@@ -380,7 +380,7 @@ CurriculumScheduler(
 
 **Before:**
 ```python
-scheduler = CurriculumLearningScheduler(total_epochs=30)
+scheduler = CurriculumScheduler(total_epochs=30)
 difficulty = scheduler.get_difficulty_for_epoch(epoch)  # DifficultyLevel.EASY/MEDIUM/HARD
 
 # Use with if-else

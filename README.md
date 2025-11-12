@@ -189,18 +189,15 @@ pipeline.run()
 ### Custom Augmentation
 
 ```python
-from augmentation import BaseImageAugmentation, AugmentationFactory, DifficultyLevel
+from augmentation import BaseImageAugmentation, AugmentationFactory
 from PIL import Image, ImageFilter
 
 class MyCustomAugmentation(BaseImageAugmentation):
     def _configure_parameters(self):
-        # Configure based on difficulty
-        if self.difficulty == DifficultyLevel.EASY:
-            self.strength = 0.1
-        elif self.difficulty == DifficultyLevel.MEDIUM:
-            self.strength = 0.5
-        else:  # HARD
-            self.strength = 1.0
+        # Configure based on difficulty (0.0-1.0)
+        self.strength = self.difficulty  # Direct mapping
+        # Or custom mapping:
+        # self.strength = 0.1 + (self.difficulty * 0.9)  # Range: 0.1 to 1.0
     
     def augment(self, image: Image.Image, **kwargs) -> Image.Image:
         # Your augmentation logic here
@@ -209,7 +206,7 @@ class MyCustomAugmentation(BaseImageAugmentation):
     def get_augmentation_info(self) -> dict:
         return {
             'type': 'MyCustom',
-            'difficulty': self.difficulty.value,
+            'difficulty': self.difficulty,
             'strength': self.strength
         }
 
@@ -218,7 +215,7 @@ AugmentationFactory.register_image_augmentation('my_custom', MyCustomAugmentatio
 
 augmentor = AugmentationFactory.create_image_augmentation(
     augmentation_type='my_custom',
-    difficulty=DifficultyLevel.MEDIUM
+    difficulty=0.5  # Float value between 0.0 and 1.0
 )
 ```
 

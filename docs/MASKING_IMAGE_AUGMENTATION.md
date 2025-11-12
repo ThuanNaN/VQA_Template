@@ -61,7 +61,7 @@ BaseImageAugmentation (abstract)
     ↓
 MaskedImageAugmentation
     ↓ uses
-CurriculumLearningScheduler
+CurriculumScheduler
 ```
 
 ### Core Components
@@ -309,12 +309,12 @@ print(f"Mask ratio: {config['mask_ratio']:.2%}")
 ```python
 from augmentation import (
     MaskedImageAugmentation,
-    CurriculumLearningScheduler
+    CurriculumScheduler
 )
 
 # Setup curriculum schedule
 total_epochs = 30
-scheduler = CurriculumLearningScheduler(total_epochs=total_epochs)
+scheduler = CurriculumScheduler(total_epochs=total_epochs)
 
 # Training loop
 for epoch in range(total_epochs):
@@ -341,10 +341,10 @@ for epoch in range(total_epochs):
 ### Custom Curriculum Schedule
 
 ```python
-from augmentation import CurriculumLearningScheduler
+from augmentation import CurriculumScheduler
 
 # Create custom schedule (60 total epochs)
-scheduler = CurriculumLearningScheduler(
+scheduler = CurriculumScheduler(
     total_epochs=60,
     easy_epochs=20,      # First 20 epochs: EASY
     medium_epochs=20,    # Next 20 epochs: MEDIUM
@@ -481,7 +481,7 @@ augmentor.augment(
 
 ✅ **DO**: Use curriculum learning for new models
 ```python
-scheduler = CurriculumLearningScheduler(total_epochs=30)
+scheduler = CurriculumScheduler(total_epochs=30)
 for epoch in range(30):
     difficulty = scheduler.get_difficulty_for_epoch(epoch)
     augmentor = MaskedImageAugmentation(difficulty=difficulty)
@@ -518,7 +518,7 @@ augmentor = MaskedImageAugmentation(patch_size=32)  # 16×16 patches
 ✅ **DO**: Start conservative, increase gradually
 ```python
 # Good progression over 30 epochs
-scheduler = CurriculumLearningScheduler(
+scheduler = CurriculumScheduler(
     total_epochs=30,
     easy_epochs=10,
     medium_epochs=10,
@@ -529,7 +529,7 @@ scheduler = CurriculumLearningScheduler(
 ❌ **DON'T**: Rush to high difficulty
 ```python
 # Bad: Mostly hard augmentation
-scheduler = CurriculumLearningScheduler(
+scheduler = CurriculumScheduler(
     total_epochs=30,
     easy_epochs=3,
     medium_epochs=5,

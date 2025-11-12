@@ -32,7 +32,7 @@ augmentation/
 
 ### Visual Augmentation
 
-- **MAE-inspired Patch Masking**: Randomly mask image patches (15%, 50%, or 75% based on difficulty)
+- **MAE-inspired Patch Masking**: Randomly mask image patches with smooth difficulty control (0.0-1.0)
 - **Color Transformations**: Adaptive color jittering, brightness, and contrast adjustments
 - **Blur Operations**: Gaussian blur with varying intensities
 - **Geometric Transformations**: Random cropping and horizontal flipping
@@ -47,7 +47,7 @@ augmentation/
 
 ### General Features
 
-- **Curriculum Learning**: Progressive difficulty increase during training (EASY → MEDIUM → HARD)
+- **Curriculum Learning**: Progressive difficulty increase during training using smooth schedulers
 - **Factory Pattern**: Unified interface for creating different augmentation types
 - **Flexible Configuration**: Toggle individual augmentation techniques on/off
 - **Extensible Architecture**: Easy to add custom augmentation strategies
@@ -63,7 +63,7 @@ from augmentation import AugmentationFactory
 factory = AugmentationFactory()
 image_augmentor = factory.create_image_augmentation(
     augmentation_type='masked',
-    difficulty='medium',
+    difficulty=0.5,  # Float value 0.0-1.0
     patch_size=16,
     seed=42
 )
@@ -71,6 +71,7 @@ image_augmentor = factory.create_image_augmentation(
 # Create text augmentation
 text_augmentor = factory.create_text_augmentation(
     augmentation_type='rule-based',
+    difficulty=0.5,  # Float value 0.0-1.0
     seed=42
 )
 
@@ -82,14 +83,14 @@ augmented_questions = text_augmentor.augment(question, num_augmentations=3)
 ### Visual Augmentation - Basic Usage
 
 ```python
-from augmentation import MaskedImageAugmentation, DifficultyLevel
+from augmentation import MaskedImageAugmentation
 from PIL import Image
 
 # Load an image
 image = Image.open('path/to/image.jpg')
 
-# Create augmentor with MEDIUM difficulty
-augmentor = MaskedImageAugmentation(difficulty=DifficultyLevel.MEDIUM)
+# Create augmentor with difficulty=0.5 (medium)
+augmentor = MaskedImageAugmentation(difficulty=0.5)
 
 # Apply augmentation
 augmented_image = augmentor.augment(image)
@@ -114,14 +115,19 @@ augmented_questions = augmentor.augment(question, num_augmentations=3)
 ### Curriculum Learning
 
 ```python
-from augmentation import CurriculumLearningScheduler, MaskedImageAugmentation
+from augmentation import SmoothCurriculumScheduler, MaskedImageAugmentation
 
-# Create scheduler for 30 epochs
-scheduler = CurriculumLearningScheduler(total_epochs=30)
+# Create scheduler for 30 epochs with cosine strategy
+scheduler = SmoothCurriculumScheduler(
+    total_epochs=30,
+    strategy='cosine',
+    warmup_ratio=0.1,
+    difficulty_range=(0.1, 0.9)
+)
 
 # Training loop
 for epoch in range(30):
-    # Get difficulty for current epoch
+    # Get difficulty for current epoch (returns float 0.0-1.0)
     difficulty = scheduler.get_difficulty_for_epoch(epoch)
     augmentor = MaskedImageAugmentation(difficulty=difficulty, seed=42)
     
@@ -132,11 +138,11 @@ for epoch in range(30):
 ### Integration with VQA Dataset
 
 ```python
-from augmentation import AugmentationFactory, DifficultyLevel
+from augmentation import AugmentationFactory
 from torch.utils.data import Dataset
 
 class AugmentedVQADataset(Dataset):
-    def __init__(self, base_dataset, difficulty=DifficultyLevel.EASY, 
+    def __init__(self, base_dataset, difficulty=0.5, 
                  use_text_aug=True, use_image_aug=True):
         self.base_dataset = base_dataset
         factory = AugmentationFactory()
@@ -218,7 +224,7 @@ We provide two types of curriculum learning schedulers:
 
 ### 1. Discrete Scheduler (Traditional)
 
-The traditional `CurriculumLearningScheduler` uses three discrete difficulty levels.
+The traditional `CurriculumScheduler` uses three discrete difficulty levels.
 
 **Default schedule for 30 epochs:**
 
@@ -232,7 +238,7 @@ The traditional `CurriculumLearningScheduler` uses three discrete difficulty lev
 
 ```python
 # Custom distribution: longer easy period
-scheduler = CurriculumLearningScheduler(
+scheduler = CurriculumScheduler(
     total_epochs=50,
     easy_epochs=20,    # 40%
     medium_epochs=20,  # 40%
@@ -240,7 +246,7 @@ scheduler = CurriculumLearningScheduler(
 )
 
 # Enable smooth transition mode (returns 0.0, 0.5, 1.0)
-scheduler = CurriculumLearningScheduler(
+scheduler = CurriculumScheduler(
     total_epochs=30,
     smooth_transition=True
 )
@@ -348,7 +354,7 @@ For more details on Vietnamese text augmentation, see [docs/RULE_BASED_AUGMENTAT
 Apply only specific augmentation techniques:
 
 ```python
-augmentor = MaskedImageAugmentation(difficulty=DifficultyLevel.MEDIUM)
+augmentor = MaskedImageAugmentation(difficulty=0.5)
 
 # Only apply masking
 masked = augmentor.augment(
@@ -404,7 +410,7 @@ Visual augmentation with patch masking and transformations.
 
 ```python
 MaskedImageAugmentation(
-    difficulty: Union[DifficultyLevel, str] = DifficultyLevel.EASY,
+    difficulty: Union[int, float] = 0.0,
     patch_size: int = 16,
     mask_ratio: Optional[float] = None,
     seed: Optional[int] = None
@@ -413,7 +419,7 @@ MaskedImageAugmentation(
 
 **Parameters:**
 
-- `difficulty`: Augmentation difficulty level (EASY, MEDIUM, or HARD)
+- `difficulty`: Augmentation difficulty level as float (0.0-1.0) where 0.0 is easiest and 1.0 is hardest
 - `patch_size`: Size of patches for masking (default: 16)
 - `mask_ratio`: Custom mask ratio (overrides difficulty default)
 - `seed`: Random seed for reproducibility
@@ -428,11 +434,15 @@ MaskedImageAugmentation(
 Vietnamese text augmentation using linguistic rules.
 
 ```python
-RuleBasedTextAugmentation(seed: Optional[int] = None)
+RuleBasedTextAugmentation(
+    difficulty: Union[int, float] = 0.0,
+    seed: Optional[int] = None
+)
 ```
 
 **Parameters:**
 
+- `difficulty`: Augmentation difficulty level as float (0.0-1.0)
 - `seed`: Random seed for reproducibility
 
 **Methods:**
@@ -441,27 +451,44 @@ RuleBasedTextAugmentation(seed: Optional[int] = None)
   - Returns: List of augmented text strings
 - `get_augmentation_info()`: Get current configuration
 
-### CurriculumLearningScheduler
+### SmoothCurriculumScheduler
+
+Progressive difficulty scheduler with smooth transitions.
 
 ```python
-CurriculumLearningScheduler(
+SmoothCurriculumScheduler(
     total_epochs: int,
-    easy_epochs: Optional[int] = None,
-    medium_epochs: Optional[int] = None,
-    hard_epochs: Optional[int] = None
+    strategy: str = 'linear',
+    warmup_ratio: float = 0.0,
+    difficulty_range: Tuple[float, float] = (0.0, 1.0),
+    gamma: float = 0.1,
+    step_size: Optional[int] = None,
+    power: float = 1.0
 )
 ```
 
 **Parameters:**
+
 - `total_epochs`: Total number of training epochs
-- `easy_epochs`: Number of EASY epochs (default: 30% of total)
-- `medium_epochs`: Number of MEDIUM epochs (default: 30% of total)
-- `hard_epochs`: Number of HARD epochs (default: 40% of total)
+- `strategy`: Scheduling strategy - 'linear', 'cosine', 'exponential', 'step', or 'polynomial'
+- `warmup_ratio`: Ratio of epochs for warmup (0.0-1.0)
+- `difficulty_range`: Min and max difficulty values (default: 0.0 to 1.0)
+- `gamma`: Learning rate for exponential/step strategies
+- `step_size`: Step size for step strategy
+- `power`: Power for polynomial strategy
 
 **Methods:**
 
-- `get_difficulty_for_epoch(epoch)`: Get difficulty level for given epoch
-- `get_schedule_info()`: Get schedule information dictionary
+- `get_difficulty_for_epoch(epoch)`: Get difficulty value (float 0.0-1.0) for given epoch
+- `get_difficulty(epoch)`: Alias for `get_difficulty_for_epoch`
+
+**Available Strategies:**
+
+1. **Linear**: Constant increase from min to max difficulty
+2. **Cosine**: Smooth S-curve progression (recommended)
+3. **Exponential**: Slow start with accelerating difficulty
+4. **Step**: Discrete steps with smooth transitions
+5. **Polynomial**: Customizable curve shape via power parameter
 
 ## Examples
 
@@ -477,14 +504,22 @@ Complete examples are available in the `examples/` directory:
 1. `text_aug_usage.py` - Vietnamese question augmentation
 2. Dataset integration examples
 
+**Curriculum Learning:**
+
+1. `curriculum_scheduler_usage.py` - Strategy comparison and visualization
+
 **Combined Usage:**
 
 ```python
-from augmentation import AugmentationFactory, CurriculumLearningScheduler
+from augmentation import AugmentationFactory, SmoothCurriculumScheduler
 
 # Setup
 factory = AugmentationFactory()
-scheduler = CurriculumLearningScheduler(total_epochs=30)
+scheduler = SmoothCurriculumScheduler(
+    total_epochs=30,
+    strategy='cosine',
+    warmup_ratio=0.1
+)
 
 # Training loop with both augmentations
 for epoch in range(30):
