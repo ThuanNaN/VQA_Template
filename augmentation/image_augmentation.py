@@ -64,15 +64,19 @@ class MaskedImageAugmentation:
         
         self.difficulty = difficulty
         self.patch_size = patch_size
+        self.seed = seed
         
         # Set default mask ratio based on difficulty if not provided
         if mask_ratio is None:
             mask_ratio = self._get_default_mask_ratio()
         self.mask_ratio = mask_ratio
         
+        # Create random number generator for reproducibility
         if seed is not None:
-            random.seed(seed)
-            np.random.seed(seed)
+            self.rng = np.random.RandomState(seed)
+            self._random_state_counter = 0
+        else:
+            self.rng = np.random.RandomState()
         
         # Configure augmentation parameters based on difficulty
         self._configure_parameters()
@@ -150,7 +154,7 @@ class MaskedImageAugmentation:
         
         if apply_flip is None:
             apply_flip = self.apply_flip
-        if apply_flip and random.random() > 0.5:
+        if apply_flip and self.rng.random() > 0.5:
             augmented_image = augmented_image.transpose(Image.FLIP_LEFT_RIGHT)
         
         if apply_color_jitter:
@@ -197,8 +201,8 @@ class MaskedImageAugmentation:
         n_masked = int(total_patches * self.mask_ratio)
         
         # Create mask indices
-        patch_indices = list(range(total_patches))
-        masked_indices = random.sample(patch_indices, n_masked)
+        patch_indices = np.arange(total_patches)
+        masked_indices = self.rng.choice(patch_indices, size=n_masked, replace=False)
         
         # Apply masking
         mask_color = 128  # Gray color for masked regions
@@ -231,7 +235,7 @@ class MaskedImageAugmentation:
         """
         # Random hue shift
         enhancer = ImageEnhance.Color(image)
-        factor = 1 + random.uniform(-self.color_jitter_strength, self.color_jitter_strength)
+        factor = 1 + self.rng.uniform(-self.color_jitter_strength, self.color_jitter_strength)
         image = enhancer.enhance(factor)
         
         return image
@@ -247,7 +251,7 @@ class MaskedImageAugmentation:
             Brightness-adjusted PIL Image
         """
         enhancer = ImageEnhance.Brightness(image)
-        factor = random.uniform(self.brightness_factor[0], self.brightness_factor[1])
+        factor = self.rng.uniform(self.brightness_factor[0], self.brightness_factor[1])
         return enhancer.enhance(factor)
     
     def _adjust_contrast(self, image: Image.Image) -> Image.Image:
@@ -261,7 +265,7 @@ class MaskedImageAugmentation:
             Contrast-adjusted PIL Image
         """
         enhancer = ImageEnhance.Contrast(image)
-        factor = random.uniform(self.contrast_factor[0], self.contrast_factor[1])
+        factor = self.rng.uniform(self.contrast_factor[0], self.contrast_factor[1])
         return enhancer.enhance(factor)
     
     def _gaussian_blur(self, image: Image.Image) -> Image.Image:
@@ -274,7 +278,7 @@ class MaskedImageAugmentation:
         Returns:
             Blurred PIL Image
         """
-        radius = random.uniform(self.blur_radius[0], self.blur_radius[1])
+        radius = self.rng.uniform(self.blur_radius[0], self.blur_radius[1])
         return image.filter(ImageFilter.GaussianBlur(radius=radius))
     
     def _random_crop(self, image: Image.Image) -> Image.Image:
@@ -288,14 +292,14 @@ class MaskedImageAugmentation:
             Cropped and resized PIL Image
         """
         width, height = image.size
-        scale = random.uniform(self.crop_scale[0], self.crop_scale[1])
+        scale = self.rng.uniform(self.crop_scale[0], self.crop_scale[1])
         
         new_width = int(width * scale)
         new_height = int(height * scale)
         
         # Random crop position
-        left = random.randint(0, width - new_width)
-        top = random.randint(0, height - new_height)
+        left = self.rng.randint(0, width - new_width + 1)
+        top = self.rng.randint(0, height - new_height + 1)
         
         cropped = image.crop((left, top, left + new_width, top + new_height))
         # Resize back to original size
