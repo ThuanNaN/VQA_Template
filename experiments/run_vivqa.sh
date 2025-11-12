@@ -33,6 +33,10 @@ FP16_FLAG="--fp16"
 LOGGING_STEPS=50
 DATALOADER_WORKERS=4
 
+# Augmentation Methods
+IMAGE_AUGMENT_METHOD="masked"  # Options: masked, none
+TEXT_AUGMENT_METHOD="rule-based"  # Options: rule-based, none
+
 # Curriculum Learning Configuration (30 epochs)
 EASY_EPOCHS=9
 MEDIUM_EPOCHS=9
@@ -40,10 +44,10 @@ HARD_EPOCHS=12
 
 # WandB Configuration (set to true to enable)
 ENABLE_WANDB=true
-WANDB_PROJECT="VQA-Augmentation-Experiments"
+WANDB_PROJECT="VQA-Augmentation"
 
 # Output directory
-OUTPUT_DIR="runs/vivqa_augmentation_experiments"
+OUTPUT_DIR="runs/vivqa_augmentation"
 
 # Color codes for output
 RED='\033[0;31m'
@@ -165,9 +169,9 @@ run_experiment \
 
 run_experiment \
     "exp2_text_augment" \
-    "Training with text augmentation only (rule-based Vietnamese)" \
+    "Training with text augmentation only ($TEXT_AUGMENT_METHOD)" \
     "--enable_text_augmentation" \
-    "--text_augmentation_type rule-based"
+    "--text_augmentation_type $TEXT_AUGMENT_METHOD"
 
 ################################################################################
 # Experiment 3: Image Augmentation Only
@@ -175,9 +179,9 @@ run_experiment \
 
 run_experiment \
     "exp3_image_augment" \
-    "Training with image augmentation (masked) only" \
+    "Training with image augmentation ($IMAGE_AUGMENT_METHOD) only" \
     "--enable_image_augmentation" \
-    "--image_augmentation_type masked" \
+    "--image_augmentation_type $IMAGE_AUGMENT_METHOD" \
     "--patch_size 16"
 
 ################################################################################
@@ -186,11 +190,11 @@ run_experiment \
 
 run_experiment \
     "exp4_text_image_augment" \
-    "Training with both text (rule-based) and image augmentation" \
+    "Training with both text ($TEXT_AUGMENT_METHOD) and image ($IMAGE_AUGMENT_METHOD) augmentation" \
     "--enable_text_augmentation" \
-    "--text_augmentation_type rule-based" \
+    "--text_augmentation_type $TEXT_AUGMENT_METHOD" \
     "--enable_image_augmentation" \
-    "--image_augmentation_type masked" \
+    "--image_augmentation_type $IMAGE_AUGMENT_METHOD" \
     "--patch_size 16"
 
 ################################################################################
@@ -199,9 +203,9 @@ run_experiment \
 
 run_experiment \
     "exp5_text_augment_cl" \
-    "Training with text augmentation (rule-based) and curriculum learning" \
+    "Training with text augmentation ($TEXT_AUGMENT_METHOD) and curriculum learning" \
     "--enable_text_augmentation" \
-    "--text_augmentation_type rule-based" \
+    "--text_augmentation_type $TEXT_AUGMENT_METHOD" \
     "--enable_curriculum" \
     "--easy_epochs $EASY_EPOCHS" \
     "--medium_epochs $MEDIUM_EPOCHS" \
@@ -213,9 +217,9 @@ run_experiment \
 
 run_experiment \
     "exp6_image_augment_cl" \
-    "Training with image augmentation and curriculum learning" \
+    "Training with image augmentation ($IMAGE_AUGMENT_METHOD) and curriculum learning" \
     "--enable_image_augmentation" \
-    "--image_augmentation_type masked" \
+    "--image_augmentation_type $IMAGE_AUGMENT_METHOD" \
     "--patch_size 16" \
     "--enable_curriculum" \
     "--easy_epochs $EASY_EPOCHS" \
@@ -228,11 +232,11 @@ run_experiment \
 
 run_experiment \
     "exp7_full_augment_cl" \
-    "Training with text (rule-based) + image augmentation and curriculum learning" \
+    "Training with text ($TEXT_AUGMENT_METHOD) + image ($IMAGE_AUGMENT_METHOD) augmentation and curriculum learning" \
     "--enable_text_augmentation" \
-    "--text_augmentation_type rule-based" \
+    "--text_augmentation_type $TEXT_AUGMENT_METHOD" \
     "--enable_image_augmentation" \
-    "--image_augmentation_type masked" \
+    "--image_augmentation_type $IMAGE_AUGMENT_METHOD" \
     "--patch_size 16" \
     "--enable_curriculum" \
     "--easy_epochs $EASY_EPOCHS" \
