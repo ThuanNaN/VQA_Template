@@ -14,18 +14,38 @@ A comprehensive Vietnamese Visual Question Answering (VQA) dataset template and 
 
 👉 **[Read the Full Documentation](docs/README.md)** to understand how these datasets were built and how to contribute improvements.
 
+## 🚀 Quick Start
+
+### Installation
+
+```bash
+# Create conda environment
+conda create -n vqa-template python=3.12.9 --y
+conda activate vqa-template
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### Download Dataset
+
+```bash
+cd data
+python download.py
+# Enter the dataset index to download (eg. 1,2,3 to download MSCOCO, ViVQA and OpenViVQA dataset)
+```
+
+### Generate COCO Images for ViVQA
+
+```bash
+cd scripts
+python create_vivqa_image.py
+```
+
 ## Requirements
 
 - Git LFS - [Installation-Linux](https://github.com/git-lfs/git-lfs/blob/main/INSTALLING.md)
 - Python 3.12.9
-
-## Install dependencies
-
-```bash
-conda create -n vqa-template python=3.12.9 --y
-conda activate vqa-template
-pip3 install -r requirements.txt
-```
 
 Download dataset
 
@@ -59,17 +79,188 @@ python vis_bbox.py --host 0.0.0.0 --port 7860
 
 ## Training
 
+### Run All Experiments
+
+```bash
+cd /home/thuannd/Repository/VQA_Template
+./experiments/run_vivqa.sh
+```
+
+### 📊 Experiments Included
+
+| # | Name | Text Aug | Image Aug | Curriculum | Command |
+|---|------|----------|-----------|------------|---------|
+| 1 | Baseline | ❌ | ❌ | ❌ | `exp1_baseline` |
+| 2 | Text Only | ✅ | ❌ | ❌ | `exp2_text_augment` |
+| 3 | Image Only | ❌ | ✅ | ❌ | `exp3_image_augment` |
+| 4 | Text + Image | ✅ | ✅ | ❌ | `exp4_text_image_augment` |
+| 5 | Text + CL | ✅ | ❌ | ✅ | `exp5_text_augment_cl` |
+| 6 | Image + CL | ❌ | ✅ | ✅ | `exp6_image_augment_cl` |
+| 7 | Full (⭐ Best) | ✅ | ✅ | ✅ | `exp7_full_augment_cl` |
+
+
 ### Basic Training
 
 Train the VQA model with default settings:
 
 ```bash
 python train.py \
-    --dataset_name ViVQA \
+    --dataset_name vivqa \
     --batch_size 64 \
     --epochs 30 \
     --learning_rate 1e-4
 ```
+
+### Training with Augmentation
+
+```bash
+python train.py \
+    --dataset_name vivqa \
+    --enable_augmentation \
+    --augmentation_type masked \
+    --patch_size 16 \
+    --epochs 30
+```
+
+### Training with Curriculum Learning ⭐ (Recommended)
+
+```bash
+python train.py \
+    --dataset_name openvivqa \
+    --enable_augmentation \
+    --enable_curriculum \
+    --epochs 50 \
+    --easy_epochs 15 \
+    --medium_epochs 15 \
+    --hard_epochs 20 \
+    --batch_size 32 \
+    --learning_rate 5e-5 \
+    --report_to_wandb \
+    --wandb_name VQA-Experiments
+```
+
+### Key Features
+
+✅ **Curriculum Learning** - Progressive difficulty (EASY → MEDIUM → HARD)
+✅ **Dynamic Augmentation** - Automatically adjusts based on training epoch
+✅ **Type-Safe Configuration** - Dataclasses for all configurations
+✅ **Extensible Architecture** - Easy to add new augmentation strategies
+✅ **WandB Integration** - Track experiments with Weights & Biases
+
+### Programmatic Usage
+
+```python
+from training import (
+    ExperimentConfig,
+    ModelConfig,
+    DataConfig,
+    AugmentationConfig,
+    TrainingConfig,
+    VQATrainingPipeline,
+)
+
+# Create configuration
+config = ExperimentConfig(
+    model=ModelConfig(
+        vis_model_name='google/vit-base-patch16-224',
+        text_model_name='vinai/bartpho-syllable-base'
+    ),
+    data=DataConfig(
+        dataset_name='vivqa',
+        batch_size=32,
+    ),
+    augmentation=AugmentationConfig(
+        enable_augmentation=True,
+        enable_curriculum=True,
+        augmentation_type='masked',
+    ),
+    training=TrainingConfig(
+        epochs=30,
+        learning_rate=5e-5,
+        report_to_wandb=True,
+    )
+)
+
+# Run training
+pipeline = VQATrainingPipeline(config)
+pipeline.run()
+```
+
+### Custom Augmentation
+
+```python
+from augmentation import BaseImageAugmentation, AugmentationFactory, DifficultyLevel
+from PIL import Image, ImageFilter
+
+class MyCustomAugmentation(BaseImageAugmentation):
+    def _configure_parameters(self):
+        # Configure based on difficulty
+        if self.difficulty == DifficultyLevel.EASY:
+            self.strength = 0.1
+        elif self.difficulty == DifficultyLevel.MEDIUM:
+            self.strength = 0.5
+        else:  # HARD
+            self.strength = 1.0
+    
+    def augment(self, image: Image.Image, **kwargs) -> Image.Image:
+        # Your augmentation logic here
+        return image
+    
+    def get_augmentation_info(self) -> dict:
+        return {
+            'type': 'MyCustom',
+            'difficulty': self.difficulty.value,
+            'strength': self.strength
+        }
+
+# Register and use
+AugmentationFactory.register_image_augmentation('my_custom', MyCustomAugmentation)
+
+augmentor = AugmentationFactory.create_image_augmentation(
+    augmentation_type='my_custom',
+    difficulty=DifficultyLevel.MEDIUM
+)
+```
+
+### Available Command-Line Arguments
+
+#### Model Arguments
+
+- `--vis_model_name` - Vision model (default: google/vit-base-patch16-224)
+- `--text_model_name` - Text model (default: vinai/bartpho-syllable-base)
+
+#### Dataset Arguments
+
+- `--dataset_name` - Dataset to use (vivqa, openvivqa, vitextvqa, etc.)
+- `--batch_size` - Batch size (default: 64)
+- `--seq_len` - Sequence length (default: 64)
+
+#### Training Arguments
+
+- `--epochs` - Number of epochs (default: 30)
+- `--learning_rate` - Learning rate (default: 1e-4)
+- `--weight_decay` - Weight decay (default: 1e-4)
+- `--fp16` - Enable mixed precision training
+
+#### Augmentation Arguments
+
+- `--enable_augmentation` - Enable image augmentation
+- `--augmentation_type` - Type of augmentation (masked, none)
+- `--patch_size` - Patch size for masked augmentation (default: 16)
+
+#### Curriculum Learning Arguments
+
+- `--enable_curriculum` - Enable curriculum learning
+- `--easy_epochs` - Number of easy epochs
+- `--medium_epochs` - Number of medium epochs
+- `--hard_epochs` - Number of hard epochs
+
+#### Logging Arguments
+
+- `--report_to_wandb` - Enable WandB logging
+- `--wandb_name` - WandB project name
+- `--run_name` - Run name for identification
+- `--output_dir` - Output directory (default: runs)
 
 ### Experiment Tracking with Weights & Biases
 
@@ -81,16 +272,16 @@ This project supports [Weights & Biases (wandb)](https://docs.wandb.ai/) for exp
 2. Get your API key from [wandb.ai/authorize](https://wandb.ai/authorize)
 3. Copy `.env.example` to `.env` and add your API key:
 
-  ```bash
-  cp .env.example .env
-  # Edit .env and set WANDB_API_KEY=your_api_key_here
-  ```
+   ```bash
+   cp .env.example .env
+   # Edit .env and set WANDB_API_KEY=your_api_key_here
+   ```
 
 4. Alternatively, login via command line:
 
-  ```bash
-  wandb login
-  ```
+   ```bash
+   wandb login
+   ```
 
 #### Training with wandb
 
@@ -98,7 +289,7 @@ Enable wandb logging by adding the `--report_to_wandb` flag:
 
 ```bash
 python train.py \
-    --dataset_name ViVQA \
+    --dataset_name vivqa \
     --batch_size 64 \
     --epochs 30 \
     --learning_rate 1e-4 \
@@ -137,6 +328,52 @@ Example wandb dashboard URL: `https://wandb.ai/<your-username>/VQA-Template/runs
 The final run will be named as: `{dataset_name}-{run_name}-{seed}`
 
 Example: `ViVQA-baseline-71`
+
+## Tips & Best Practices
+
+1. **Start Small**: Test with a few epochs first
+
+   ```bash
+   python train.py --dataset_name vivqa --epochs 5
+   ```
+
+2. **Use Curriculum Learning**: It helps model convergence
+
+   ```bash
+   --enable_augmentation --enable_curriculum
+   ```
+
+3. **Monitor with WandB**: Track experiments
+
+   ```bash
+   --report_to_wandb --wandb_name MyProject
+   ```
+
+4. **Adjust Batch Size**: Based on GPU memory
+
+   ```bash
+   --batch_size 16  # For smaller GPUs
+   ```
+
+5. **Use Mixed Precision**: Faster training
+
+   ```bash
+   --fp16
+   ```
+
+## Common Issues
+
+**Q: ModuleNotFoundError: No module named 'transformers'**
+A: Install dependencies: `pip install -r requirements.txt`
+
+**Q: CUDA out of memory**
+A: Reduce batch size: `--batch_size 16` or `--batch_size 8`
+
+**Q: Training is slow**
+A: Use `--fp16` and `--dataloader_workers 4`
+
+**Q: Want to try different augmentation strengths**
+A: Use curriculum learning: `--enable_curriculum`
 
 ## Dataset
 
