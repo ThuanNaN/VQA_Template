@@ -74,7 +74,8 @@ python download.py
 - Visulize bbox
 
 ```bash
-python vis_bbox.py --host 0.0.0.0 --port 7860
+cd ./scripts
+python visualize_bbox.py --host 0.0.0.0 --port 7860
 ```
 
 ## Training
