@@ -79,3 +79,12 @@ ViVQA-X:
   download_type: "huggingface"
   cmd: []
 
+
+ViCLEVR:
+  # Note: ViCLEVR dataset information to be added when available
+  # This is a placeholder for Vietnamese CLEVR dataset
+  url: ""
+  path_save: ./viclevr
+  download_type: "placeholder"
+  cmd: []
+

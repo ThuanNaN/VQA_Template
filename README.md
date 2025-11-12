@@ -1,5 +1,18 @@
 # VQA Template
 
+A comprehensive Vietnamese Visual Question Answering (VQA) dataset template and research framework.
+
+## 📚 Documentation
+
+**NEW**: Comprehensive [Vietnamese VQA Dataset Survey](docs/README.md) covering:
+- Detailed analysis of 6 Vietnamese VQA datasets (ViVQA, OpenViVQA, ViTextVQA, ViOCRVQA, ViCLEVR, EVJVQA)
+- Dataset building methodologies and generation approaches
+- Quality assessments and improvement recommendations
+- 100+ template examples for dataset enhancement
+- Contribution guidelines
+
+👉 **[Read the Full Documentation](docs/README.md)** to understand how these datasets were built and how to contribute improvements.
+
 ## Requirements
 
 - Git LFS - [Installation-Linux](https://github.com/git-lfs/git-lfs/blob/main/INSTALLING.md)
@@ -125,6 +138,14 @@ Example: `ViVQA-baseline-71`
 
 ## Dataset
 
+For a comprehensive analysis of Vietnamese VQA datasets, see our [Dataset Survey Documentation](docs/README.md):
+- 📊 [Complete Dataset Survey](docs/DATASET_SURVEY.md) - Detailed analysis of building methods, generation approaches, and quality
+- ⚡ [Quick Reference Guide](docs/DATASET_QUICK_REFERENCE.md) - Dataset comparison and key findings
+- 🔧 [Template Improvements](docs/TEMPLATE_IMPROVEMENTS.md) - 100+ concrete template examples
+- 🤝 [Contributing Guidelines](docs/CONTRIBUTING.md) - How to contribute improvements
+
+### Supported Datasets
+
 - [ ] [MSCOCO](https://cocodataset.org/#download) - Microsoft Common Objects in Context
 - [ ] [ViVQA](https://github.com/kh4nh12/ViVQA) - Vietnamese Visual Question Answering Dataset
 - [ ] [OpenViVQA](https://huggingface.co/datasets/uitnlp/OpenViVQA-dataset) - Open Domain Vietnamese Visual Question Answering Dataset
@@ -132,6 +153,7 @@ Example: `ViVQA-baseline-71`
 - [ ] [ViOCR-VQA](https://huggingface.co/datasets/VLAI-AIVN/ViOCR-VQA) - Vietnamese Visual Question Answering Dataset with OCR
 - [ ] [EVJ-VQA](https://huggingface.co/datasets/dinhanhx/evjvqa) - Vietnamese Visual Question Answering Dataset for e-commerce domain
 - [ ] [ViTextVQA](https://huggingface.co/datasets/minhquan6203/ViTextVQA) - Vietnamese Text-based Visual Question Answering Dataset
+- [ ] [ViCLEVR](docs/DATASET_SURVEY.md#viclevr) - Vietnamese CLEVR Dataset (planned/placeholder)
 
 ## Paper
 
@@ -140,3 +162,35 @@ Example: `ViVQA-baseline-71`
 - [ ] [Stacked Attention Networks for Image Question Answering](https://arxiv.org/pdf/1511.02274)
 - [ ] [LXMERT: Learning Cross-Modality Encoder Representations from Transformers](https://arxiv.org/abs/1908.07490)
 - [ ] [Bottom-Up and Top-Down Attention for Image Captioning and Visual Question Answering](https://arxiv.org/abs/1707.07998)
+
+## Contributing
+
+We welcome contributions to improve Vietnamese VQA datasets and tools! See our [Contributing Guidelines](docs/CONTRIBUTING.md) for:
+
+- Priority contribution areas
+- Template enhancement opportunities
+- Code contribution workflow
+- Documentation improvements
+
+**Top Contribution Opportunities**:
+1. ✨ Expand ViVQA templates (35+ new templates)
+2. 🛒 Create EVJVQA Vietnamese e-commerce templates
+3. 🔬 Integrate ViCLEVR dataset support
+4. 🤖 Build modern LLM-based generation pipeline
+5. 📊 Develop quality analysis tools
+
+👉 [Start Contributing](docs/CONTRIBUTING.md)
+
+## Citation
+
+If you use this repository or the dataset survey in your research, please cite:
+
+```bibtex
+@misc{vqa_template_2024,
+  title={Vietnamese VQA Template: Datasets, Analysis, and Tools},
+  author={VQA Template Team},
+  year={2024},
+  howpublished={\url{https://github.com/ThuanNaN/VQA_Template}},
+  note={Framework and comprehensive survey for Vietnamese Visual Question Answering}
+}
+```
