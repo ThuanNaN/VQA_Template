@@ -2,10 +2,9 @@ from .base import (
     BaseAugmentation,
     BaseImageAugmentation,
     BaseTextAugmentation,
-    DifficultyLevel,
     NoAugmentation,
 )
-from .scheduler import CurriculumLearningScheduler, SmoothCurriculumScheduler
+from .scheduler import CurriculumScheduler
 from .factory import AugmentationFactory
 from .visual.mask import (
     MaskedImageAugmentation,
@@ -16,10 +15,8 @@ __all__ = [
     'BaseAugmentation',
     'BaseImageAugmentation',
     'BaseTextAugmentation',
-    'DifficultyLevel',
     'NoAugmentation',
     'AugmentationFactory',
     'MaskedImageAugmentation',
-    'CurriculumLearningScheduler',
-    'SmoothCurriculumScheduler',
+    'CurriculumScheduler',
 ]

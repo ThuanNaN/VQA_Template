@@ -212,9 +212,15 @@ Inspired by [Masked Autoencoders Are Scalable Vision Learners](https://arxiv.org
 
 **Use case**: Later epochs to improve model robustness and generalization
 
-## Curriculum Learning Schedule
+## Curriculum Learning Schedules
 
-The default schedule for 30 epochs:
+We provide two types of curriculum learning schedulers:
+
+### 1. Discrete Scheduler (Traditional)
+
+The traditional `CurriculumLearningScheduler` uses three discrete difficulty levels.
+
+**Default schedule for 30 epochs:**
 
 | Epochs | Difficulty | Mask Ratio | Purpose |
 |--------|-----------|-----------|---------|
@@ -222,7 +228,7 @@ The default schedule for 30 epochs:
 | 9-17 (30%) | MEDIUM | 50% | Intermediate robustness |
 | 18-29 (40%) | HARD | 75% | Strong generalization |
 
-### Custom Schedule
+**Custom Schedule:**
 
 ```python
 # Custom distribution: longer easy period
@@ -232,7 +238,71 @@ scheduler = CurriculumLearningScheduler(
     medium_epochs=20,  # 40%
     hard_epochs=10     # 20%
 )
+
+# Enable smooth transition mode (returns 0.0, 0.5, 1.0)
+scheduler = CurriculumLearningScheduler(
+    total_epochs=30,
+    smooth_transition=True
+)
 ```
+
+### 2. Smooth Scheduler (Recommended) 🆕
+
+The new `CurriculumScheduler` provides continuous difficulty values (0.0 to 1.0) for fine-grained control.
+
+**Five scheduling strategies:**
+
+```python
+from augmentation import CurriculumScheduler
+
+# Linear progression (uniform increase)
+scheduler = CurriculumScheduler(total_epochs=100, strategy='linear')
+
+# Cosine annealing (smooth S-curve) - RECOMMENDED
+scheduler = CurriculumScheduler(total_epochs=100, strategy='cosine')
+
+# Exponential (slow start, rapid increase)
+scheduler = CurriculumScheduler(total_epochs=100, strategy='exponential', gamma=0.05)
+
+# Step-wise increases
+scheduler = CurriculumScheduler(total_epochs=100, strategy='step', step_size=20)
+
+# Polynomial progression
+scheduler = CurriculumScheduler(total_epochs=100, strategy='polynomial', power=2.5)
+```
+
+**Advanced features:**
+
+```python
+# With warmup period
+scheduler = CurriculumScheduler(
+    total_epochs=100,
+    strategy='cosine',
+    warmup_epochs=10,          # First 10 epochs at minimum
+    min_difficulty=0.2,        # Start at 20%
+    max_difficulty=0.8         # Cap at 80%
+)
+
+# Use in training loop
+for epoch in range(100):
+    difficulty = scheduler.get_difficulty(epoch)  # Returns 0.0 to 1.0
+    
+    # Interpolate augmentation parameters
+    mask_ratio = 0.1 + difficulty * 0.4    # 10% to 50%
+    synonym_ratio = 0.1 + difficulty * 0.3  # 10% to 40%
+```
+
+**Why use Smooth Scheduler?**
+- ✓ Continuous difficulty values (not just 3 levels)
+- ✓ Smooth transitions (no abrupt jumps)
+- ✓ Multiple strategies (linear, cosine, exponential, step, polynomial)
+- ✓ Warmup support for training stability
+- ✓ Custom difficulty ranges
+- ✓ Similar to learning rate schedulers
+
+📖 **See full documentation:** [docs/SMOOTH_CURRICULUM_SCHEDULER.md](../docs/SMOOTH_CURRICULUM_SCHEDULER.md)
+
+🎯 **Quick reference:** [SCHEDULER_QUICK_REFERENCE.md](../SCHEDULER_QUICK_REFERENCE.md)
 
 ### Textual Augmentation: Rule-Based Text Augmentation
 

@@ -30,8 +30,7 @@ from dataset import (
 from models import SimpleVQAConfig, SimpleVQA
 from augmentation import (
     AugmentationFactory,
-    CurriculumLearningScheduler,
-    DifficultyLevel,
+    CurriculumScheduler,
 )
 from utils import compute_metrics, seed_everything
 import logging
@@ -164,7 +163,7 @@ class VQATrainingPipeline:
             if self.config.augmentation.enable_image_augmentation:
                 image_augmentor = AugmentationFactory.create_image_augmentation(
                     augmentation_type=self.config.augmentation.image_augmentation_type,
-                    difficulty=DifficultyLevel.EASY,
+                    difficulty=0.0,  # Start with minimum difficulty
                     patch_size=self.config.augmentation.patch_size,
                     seed=self.config.augmentation.seed
                 )
@@ -175,7 +174,7 @@ class VQATrainingPipeline:
             if self.config.augmentation.enable_text_augmentation:
                 text_augmentor = AugmentationFactory.create_text_augmentation(
                     augmentation_type=self.config.augmentation.text_augmentation_type,
-                    difficulty=DifficultyLevel.EASY,
+                    difficulty=0.0,  # Start with minimum difficulty
                     seed=self.config.augmentation.seed
                 )
                 train_dataset.set_text_augmentation(lambda text: text_augmentor.augment(text))
@@ -195,19 +194,21 @@ class VQATrainingPipeline:
         logger.info(f"Model created with {num_classes} classes")
         return model, config
     
-    def create_curriculum_scheduler(self) -> Optional[CurriculumLearningScheduler]:
+    def create_curriculum_scheduler(self) -> Optional[CurriculumScheduler]:
         """Create curriculum learning scheduler if enabled."""
         if not self.config.augmentation.enable_curriculum:
             return None
         
-        scheduler = CurriculumLearningScheduler(
+        # Use smooth curriculum scheduler with cosine strategy by default
+        scheduler = CurriculumScheduler(
             total_epochs=self.config.augmentation.total_epochs or self.config.training.epochs,
-            easy_epochs=self.config.augmentation.easy_epochs,
-            medium_epochs=self.config.augmentation.medium_epochs,
-            hard_epochs=self.config.augmentation.hard_epochs
+            strategy='cosine',  # Smooth S-curve progression
+            warmup_epochs=max(1, int((self.config.augmentation.total_epochs or self.config.training.epochs) * 0.1)),  # 10% warmup
+            min_difficulty=0.1,  # Start gentle
+            max_difficulty=0.9   # Cap intensity
         )
         
-        logger.info("Curriculum Learning enabled")
+        logger.info("Smooth Curriculum Learning enabled")
         logger.info(f"Schedule: {scheduler.get_schedule_info()}")
         
         return scheduler
@@ -219,14 +220,14 @@ class VQATrainingPipeline:
         if not config.enable_image_augmentation and not config.enable_text_augmentation:
             return None
         
-        def factory(difficulty: DifficultyLevel):
-            """Create augmentation strategies for given difficulty."""
+        def factory(difficulty: float):
+            """Create augmentation strategies for given difficulty (0.0-1.0)."""
             augmentors = {}
             
             if config.enable_image_augmentation:
                 augmentors['image'] = AugmentationFactory.create_image_augmentation(
                     augmentation_type=config.image_augmentation_type,
-                    difficulty=difficulty,
+                    difficulty=difficulty,  # Now uses float 0.0-1.0
                     patch_size=config.patch_size,
                     seed=config.seed
                 )
@@ -234,7 +235,7 @@ class VQATrainingPipeline:
             if config.enable_text_augmentation:
                 augmentors['text'] = AugmentationFactory.create_text_augmentation(
                     augmentation_type=config.text_augmentation_type,
-                    difficulty=difficulty,
+                    difficulty=difficulty,  # Now uses float 0.0-1.0
                     seed=config.seed
                 )
             

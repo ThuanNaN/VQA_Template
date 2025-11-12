@@ -7,7 +7,7 @@ and dynamic augmentation strategies.
 
 from typing import Optional, Dict, Any, Callable
 from transformers import Trainer, TrainerCallback
-from augmentation import CurriculumLearningScheduler, DifficultyLevel
+from augmentation import CurriculumScheduler
 import logging
 
 logger = logging.getLogger(__name__)
@@ -21,17 +21,17 @@ class CurriculumLearningCallback(TrainerCallback):
     current epoch and curriculum schedule.
     
     Args:
-        scheduler: CurriculumLearningScheduler instance
+        scheduler: CurriculumScheduler instance
         train_dataset: Training dataset with set_image_augmentation method
-        augmentation_factory: Function that creates augmentation given difficulty level
+        augmentation_factory: Function that creates augmentation given difficulty value (0.0-1.0)
         val_dataset: Optional validation dataset
     """
     
     def __init__(
         self,
-        scheduler: CurriculumLearningScheduler,
+        scheduler: CurriculumScheduler,
         train_dataset: Any,
-        augmentation_factory: Callable[[DifficultyLevel], Any],
+        augmentation_factory: Callable[[float], Any],
         val_dataset: Optional[Any] = None
     ):
         self.scheduler = scheduler
@@ -44,14 +44,14 @@ class CurriculumLearningCallback(TrainerCallback):
         """Update augmentation difficulty at the beginning of each epoch."""
         epoch = int(state.epoch) if state.epoch is not None else 0
         
-        # Get difficulty for current epoch
-        difficulty = self.scheduler.get_difficulty_for_epoch(epoch)
+        # Get difficulty for current epoch (0.0 to 1.0)
+        difficulty = self.scheduler.get_difficulty(epoch)
         
-        # Only update if difficulty changed
-        if difficulty != self.current_difficulty:
+        # Only update if difficulty changed significantly (threshold to avoid too frequent updates)
+        if self.current_difficulty is None or abs(difficulty - self.current_difficulty) > 0.01:
             self.current_difficulty = difficulty
             
-            logger.info(f"Epoch {epoch}: Updating curriculum to {difficulty.value.upper()} level")
+            logger.info(f"Epoch {epoch}: Updating curriculum difficulty to {difficulty:.3f}")
             
             # Create new augmentations with current difficulty
             augmentors = self.augmentation_factory(difficulty)
@@ -90,15 +90,15 @@ class VQATrainer(Trainer):
     - VQA-specific logging and metrics
     
     Args:
-        curriculum_scheduler: Optional CurriculumLearningScheduler for curriculum learning
-        augmentation_factory: Function that creates augmentation given difficulty level
+        curriculum_scheduler: Optional CurriculumScheduler for curriculum learning
+        augmentation_factory: Function that creates augmentation given difficulty value (0.0-1.0)
         *args, **kwargs: Arguments passed to base Trainer
     """
     
     def __init__(
         self,
-        curriculum_scheduler: Optional[CurriculumLearningScheduler] = None,
-        augmentation_factory: Optional[Callable[[DifficultyLevel], Any]] = None,
+        curriculum_scheduler: Optional[CurriculumScheduler] = None,
+        augmentation_factory: Optional[Callable[[float], Any]] = None,
         *args,
         **kwargs
     ):
@@ -135,8 +135,8 @@ class VQATrainer(Trainer):
         # Add curriculum difficulty to logs if available
         if self.curriculum_scheduler is not None and self.state.epoch is not None:
             epoch = int(self.state.epoch)
-            difficulty = self.curriculum_scheduler.get_difficulty_for_epoch(epoch)
-            logs['curriculum_difficulty'] = difficulty.value
+            difficulty = self.curriculum_scheduler.get_difficulty(epoch)
+            logs['curriculum_difficulty'] = difficulty
         
         if start_time is not None:
             super().log(logs, start_time)

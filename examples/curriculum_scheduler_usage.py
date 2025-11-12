@@ -1,16 +1,15 @@
 """
-Example usage of Curriculum Learning Schedulers.
+Example usage of Smooth Curriculum Learning Scheduler.
 
-This script demonstrates how to use both the discrete CurriculumLearningScheduler
-and the new SmoothCurriculumScheduler for fine-grained difficulty control.
+This script demonstrates how to use the CurriculumScheduler
+with different strategies for fine-grained difficulty control.
 """
 
 import sys
 sys.path.append('..')
 
 import matplotlib.pyplot as plt
-import numpy as np
-from augmentation.scheduler import CurriculumLearningScheduler, SmoothCurriculumScheduler
+from augmentation import CurriculumScheduler
 
 
 def plot_scheduler_comparison():
@@ -20,40 +19,27 @@ def plot_scheduler_comparison():
     
     # Create figure with subplots
     fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-    fig.suptitle('Curriculum Learning Scheduler Comparison', fontsize=16)
+    fig.suptitle('Smooth Curriculum Learning Scheduler Strategies', fontsize=16)
     
-    # 1. Discrete Scheduler (Original)
-    discrete_scheduler = CurriculumLearningScheduler(total_epochs=total_epochs)
-    discrete_difficulties = []
-    for epoch in epochs:
-        level = discrete_scheduler.get_difficulty_for_epoch(epoch)
-        # Map to numeric values for plotting
-        level_map = {'easy': 0.0, 'medium': 0.5, 'hard': 1.0}
-        discrete_difficulties.append(level_map[level.value])
-    
-    axes[0, 0].plot(epochs, discrete_difficulties, 'b-', linewidth=2)
-    axes[0, 0].set_title('Discrete Levels (Original)')
-    axes[0, 0].set_xlabel('Epoch')
-    axes[0, 0].set_ylabel('Difficulty')
-    axes[0, 0].grid(True, alpha=0.3)
-    axes[0, 0].set_ylim(-0.1, 1.1)
-    
-    # 2. Linear Smooth Scheduler
-    linear_scheduler = SmoothCurriculumScheduler(
+    # 1. Linear Smooth Scheduler
+    linear_scheduler = CurriculumScheduler(
         total_epochs=total_epochs, 
         strategy='linear'
     )
     linear_difficulties = [linear_scheduler.get_difficulty(epoch) for epoch in epochs]
     
-    axes[0, 1].plot(epochs, linear_difficulties, 'g-', linewidth=2)
-    axes[0, 1].set_title('Linear Progression')
-    axes[0, 1].set_xlabel('Epoch')
+    axes[0, 0].plot(epochs, linear_difficulties, 'g-', linewidth=2)
+    axes[0, 0].set_title('Linear Progression')
+    axes[0, 0].set_xlabel('Epoch')
+    axes[0, 0].set_ylabel('Difficulty')
+    axes[0, 0].grid(True, alpha=0.3)
+    axes[0, 0].set_ylim(-0.1, 1.1)
     axes[0, 1].set_ylabel('Difficulty')
     axes[0, 1].grid(True, alpha=0.3)
     axes[0, 1].set_ylim(-0.1, 1.1)
     
     # 3. Cosine Smooth Scheduler
-    cosine_scheduler = SmoothCurriculumScheduler(
+    cosine_scheduler = CurriculumScheduler(
         total_epochs=total_epochs, 
         strategy='cosine'
     )
@@ -67,7 +53,7 @@ def plot_scheduler_comparison():
     axes[0, 2].set_ylim(-0.1, 1.1)
     
     # 4. Exponential Smooth Scheduler
-    exp_scheduler = SmoothCurriculumScheduler(
+    exp_scheduler = CurriculumScheduler(
         total_epochs=total_epochs, 
         strategy='exponential',
         gamma=0.05
@@ -82,7 +68,7 @@ def plot_scheduler_comparison():
     axes[1, 0].set_ylim(-0.1, 1.1)
     
     # 5. Step Smooth Scheduler
-    step_scheduler = SmoothCurriculumScheduler(
+    step_scheduler = CurriculumScheduler(
         total_epochs=total_epochs, 
         strategy='step',
         step_size=20,
@@ -98,7 +84,7 @@ def plot_scheduler_comparison():
     axes[1, 1].set_ylim(-0.1, 1.1)
     
     # 6. Polynomial Smooth Scheduler
-    poly_scheduler = SmoothCurriculumScheduler(
+    poly_scheduler = CurriculumScheduler(
         total_epochs=total_epochs, 
         strategy='polynomial',
         power=2.5
@@ -123,7 +109,7 @@ def demonstrate_warmup():
     total_epochs = 100
     warmup_epochs = 20
     
-    scheduler = SmoothCurriculumScheduler(
+    scheduler = CurriculumScheduler(
         total_epochs=total_epochs,
         strategy='cosine',
         warmup_epochs=warmup_epochs
@@ -153,7 +139,7 @@ def demonstrate_custom_range():
     total_epochs = 100
     
     # Custom range: start at 0.2, end at 0.8
-    scheduler = SmoothCurriculumScheduler(
+    scheduler = CurriculumScheduler(
         total_epochs=total_epochs,
         strategy='linear',
         min_difficulty=0.2,
@@ -183,7 +169,7 @@ def practical_augmentation_example():
     """Show how to use difficulty values for practical augmentation."""
     total_epochs = 50
     
-    scheduler = SmoothCurriculumScheduler(
+    scheduler = CurriculumScheduler(
         total_epochs=total_epochs,
         strategy='cosine',
         warmup_epochs=5
@@ -231,28 +217,30 @@ def show_schedule_info():
     configs = [
         {
             'name': 'Smooth Linear',
-            'scheduler': SmoothCurriculumScheduler(total_epochs=100, strategy='linear')
+            'scheduler': CurriculumScheduler(total_epochs=100, strategy='linear')
         },
         {
             'name': 'Smooth Cosine with Warmup',
-            'scheduler': SmoothCurriculumScheduler(
+            'scheduler': CurriculumScheduler(
                 total_epochs=100, strategy='cosine', warmup_epochs=10
             )
         },
         {
             'name': 'Smooth Exponential',
-            'scheduler': SmoothCurriculumScheduler(
+            'scheduler': CurriculumScheduler(
                 total_epochs=100, strategy='exponential', gamma=0.05
             )
         },
         {
-            'name': 'Discrete (Original)',
-            'scheduler': CurriculumLearningScheduler(total_epochs=100)
+            'name': 'Smooth Step-wise',
+            'scheduler': CurriculumScheduler(
+                total_epochs=100, strategy='step', step_size=20
+            )
         },
         {
-            'name': 'Discrete with Smooth Transition',
-            'scheduler': CurriculumLearningScheduler(
-                total_epochs=100, smooth_transition=True
+            'name': 'Smooth Polynomial',
+            'scheduler': CurriculumScheduler(
+                total_epochs=100, strategy='polynomial', power=2.0
             )
         }
     ]

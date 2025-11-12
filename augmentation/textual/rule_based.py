@@ -6,8 +6,8 @@ with curriculum learning to progressively increase difficulty.
 """
 
 import random
-from typing import Optional, Dict, Any
-from ..base import BaseTextAugmentation, DifficultyLevel
+from typing import Optional, Dict, Any, Union
+from ..base import BaseTextAugmentation
 
 class RuleBasedTextAugmentation(BaseTextAugmentation):
     """
@@ -21,16 +21,16 @@ class RuleBasedTextAugmentation(BaseTextAugmentation):
     - Adjective synonyms (lớn, to, rộng)
     - Vietnamese-specific paraphrasing
     
-    Curriculum learning controls the FREQUENCY of augmentation:
-    - EASY: 20% of texts are augmented
-    - MEDIUM: 50% of texts are augmented
-    - HARD: 80% of texts are augmented
+    Curriculum learning controls the FREQUENCY of augmentation using smooth difficulty (0.0-1.0):
+    - 0.0 (easy): 5% of texts are augmented
+    - 0.5 (medium): ~27% of texts are augmented
+    - 1.0 (hard): 50% of texts are augmented
     
     Based on "Data Augmentation for Visual Question Answering" (ACL 2017)
     Paper: https://aclanthology.org/W17-3529.pdf
     """
     
-    def __init__(self, difficulty: DifficultyLevel = DifficultyLevel.MEDIUM, seed: Optional[int] = None):
+    def __init__(self, difficulty: Union[int, float] = 0.0, seed: Optional[int] = None):
         super().__init__(difficulty, seed)
         self.rng = random.Random(seed)
         self._init_vietnamese_rules()
@@ -145,16 +145,17 @@ class RuleBasedTextAugmentation(BaseTextAugmentation):
         }
     
     def _configure_parameters(self) -> None:
-        """Configure augmentation frequency based on difficulty."""
-        if self.difficulty == DifficultyLevel.EASY:
-            self.apply_prob = 0.05  # 5% chance to apply augmentation
-            self.max_replacements = 1  # Replace at most 1 word
-        elif self.difficulty == DifficultyLevel.MEDIUM:
-            self.apply_prob = 0.15  # 15% chance to apply augmentation
-            self.max_replacements = 2  # Replace at most 2 words
-        else:  # HARD
-            self.apply_prob = 0.5  # 50% chance to apply augmentation
-            self.max_replacements = 3  # Replace at most 3 words
+        """Configure augmentation frequency based on difficulty (0.0-1.0)."""
+        # Smooth interpolation for apply probability: 5% to 50%
+        min_prob = 0.05
+        max_prob = 0.50
+        self.apply_prob = min_prob + self.difficulty * (max_prob - min_prob)
+        
+        # Max replacements: 1 to 3 (rounded)
+        min_replacements = 1
+        max_replacements = 3
+        self.max_replacements = int(min_replacements + self.difficulty * (max_replacements - min_replacements))
+        self.max_replacements = max(1, self.max_replacements)  # At least 1
     
     def augment(self, text: str, **kwargs) -> str:
         """

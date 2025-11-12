@@ -12,11 +12,7 @@ The framework provides flexible difficulty levels for progressive training.
 import numpy as np
 from PIL import Image, ImageFilter, ImageEnhance
 from typing import Optional, Union
-from ..base import (
-    BaseImageAugmentation, 
-    DifficultyLevel, 
-)
-from ..scheduler import CurriculumLearningScheduler
+from ..base import BaseImageAugmentation
 
 
 class MaskedImageAugmentation(BaseImageAugmentation):
@@ -43,7 +39,7 @@ class MaskedImageAugmentation(BaseImageAugmentation):
     
     def __init__(
         self,
-        difficulty: Union[DifficultyLevel, str] = DifficultyLevel.EASY,
+        difficulty: Union[int, float] = 0.0,
         patch_size: int = 16,
         mask_ratio: Optional[float] = None,
         seed: Optional[int] = None
@@ -63,48 +59,43 @@ class MaskedImageAugmentation(BaseImageAugmentation):
         super().__init__(difficulty=difficulty, seed=seed)
     
     def _get_default_mask_ratio(self) -> float:
-        """Get default mask ratio based on difficulty level."""
-        if self.difficulty == DifficultyLevel.EASY:
-            return 0.05  # 5% masking for easy samples
-        elif self.difficulty == DifficultyLevel.MEDIUM:
-            return 0.15  # 15% masking for medium samples
-        else:  # HARD
-            return 0.5  # 50% masking for hard samples (MAE paper uses 75%)
+        """Get default mask ratio based on difficulty level (0.0-1.0)."""
+        # Smooth interpolation: 5% to 50% masking
+        min_ratio = 0.05
+        max_ratio = 0.50
+        return min_ratio + self.difficulty * (max_ratio - min_ratio)
     
     def _configure_parameters(self):
-        """Configure augmentation parameters based on difficulty level."""
+        """Configure augmentation parameters based on difficulty level (0.0-1.0)."""
         # Set default mask ratio based on difficulty if not provided
         if self._mask_ratio is None:
             self.mask_ratio = self._get_default_mask_ratio()
         else:
             self.mask_ratio = self._mask_ratio
         
-        if self.difficulty == DifficultyLevel.EASY:
-            # Easy: Minimal transformations
-            self.color_jitter_strength = 0.1
-            self.brightness_factor = (0.9, 1.1)
-            self.contrast_factor = (0.9, 1.1)
-            self.blur_radius = (0.1, 0.3)
-            self.apply_flip = False
-            self.crop_scale = (0.95, 1.0)
-            
-        elif self.difficulty == DifficultyLevel.MEDIUM:
-            # Medium: Moderate transformations
-            self.color_jitter_strength = 0.3
-            self.brightness_factor = (0.7, 1.3)
-            self.contrast_factor = (0.7, 1.3)
-            self.blur_radius = (0.5, 1.5)
-            self.apply_flip = True
-            self.crop_scale = (0.8, 1.0)
-            
-        else:  # HARD
-            # Hard: Aggressive transformations
-            self.color_jitter_strength = 0.5
-            self.brightness_factor = (0.5, 1.5)
-            self.contrast_factor = (0.5, 1.5)
-            self.blur_radius = (1.0, 3.0)
-            self.apply_flip = True
-            self.crop_scale = (0.7, 1.0)
+        # Smooth interpolation for all parameters based on difficulty (0.0-1.0)
+        # Color jitter: 0.0 to 0.5
+        self.color_jitter_strength = self.difficulty * 0.5
+        
+        # Brightness: (1.0, 1.0) to (0.5, 1.5)
+        brightness_range = self.difficulty * 0.5
+        self.brightness_factor = (1.0 - brightness_range, 1.0 + brightness_range)
+        
+        # Contrast: (1.0, 1.0) to (0.5, 1.5)
+        contrast_range = self.difficulty * 0.5
+        self.contrast_factor = (1.0 - contrast_range, 1.0 + contrast_range)
+        
+        # Blur radius: 0.0 to 3.0
+        min_blur, max_blur = 0.0, 3.0
+        blur_range = self.difficulty * max_blur
+        self.blur_radius = (min_blur, blur_range)
+        
+        # Apply flip if difficulty > 0.3
+        self.apply_flip = self.difficulty > 0.3
+        
+        # Crop scale: 1.0 to 0.7 (inverse relationship)
+        min_scale = 0.7
+        self.crop_scale = (min_scale + (1.0 - self.difficulty) * (1.0 - min_scale), 1.0)
     
     def augment(
         self, 

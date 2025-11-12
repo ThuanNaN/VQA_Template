@@ -1,5 +1,4 @@
-from ..base import DifficultyLevel
-from ..scheduler import CurriculumLearningScheduler
+from ..scheduler import CurriculumScheduler
 from .mask import (
     MaskedImageAugmentation,
 )

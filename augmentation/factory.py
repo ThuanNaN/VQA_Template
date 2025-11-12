@@ -6,7 +6,7 @@ augmentation objects based on type and configuration.
 """
 
 from typing import Optional, Union
-from .base import BaseImageAugmentation, BaseTextAugmentation, DifficultyLevel, NoAugmentation
+from .base import BaseImageAugmentation, BaseTextAugmentation, NoAugmentation
 from .visual.mask import MaskedImageAugmentation
 from .textual.rule_based import RuleBasedTextAugmentation
 
@@ -72,7 +72,7 @@ class AugmentationFactory:
     def create_image_augmentation(
         cls,
         augmentation_type: str = 'masked',
-        difficulty: Union[DifficultyLevel, str] = DifficultyLevel.EASY,
+        difficulty: Union[int, float] = 0.0,
         **kwargs
     ) -> BaseImageAugmentation:
         """
@@ -80,7 +80,7 @@ class AugmentationFactory:
         
         Args:
             augmentation_type: Type of augmentation ('masked', 'none', etc.)
-            difficulty: Difficulty level for curriculum learning
+            difficulty: Difficulty level for curriculum learning (float 0.0-1.0)
             **kwargs: Additional arguments passed to augmentation constructor
             
         Returns:
@@ -104,7 +104,7 @@ class AugmentationFactory:
     def create_text_augmentation(
         cls,
         augmentation_type: str = 'simple',
-        difficulty: DifficultyLevel = DifficultyLevel.MEDIUM,
+        difficulty: Union[int, float] = 0.0,
         seed: Optional[int] = None
     ) -> BaseTextAugmentation:
         """
@@ -114,7 +114,7 @@ class AugmentationFactory:
             augmentation_type: Type of text augmentation
                 - 'simple': Basic word-level operations (language-agnostic)
                 - 'rule-based': Rich Vietnamese linguistic rules
-            difficulty: Difficulty level for curriculum learning
+            difficulty: Difficulty level for curriculum learning (float 0.0-1.0)
             seed: Random seed for reproducibility
             
         Returns:

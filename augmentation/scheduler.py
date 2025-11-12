@@ -1,11 +1,10 @@
 """Scheduler for Curriculum Learning in Text and Image Augmentation."""
 
 import math
-from typing import Optional, Union, Literal
-from .base import DifficultyLevel
+from typing import Literal
 
 
-class SmoothCurriculumScheduler:
+class CurriculumScheduler:
     """
     Smooth curriculum learning scheduler with continuous difficulty adjustment.
     
@@ -34,13 +33,13 @@ class SmoothCurriculumScheduler:
             
     Example:
         >>> # Linear progression
-        >>> scheduler = SmoothCurriculumScheduler(total_epochs=100, strategy='linear')
+        >>> scheduler = CurriculumScheduler(total_epochs=100, strategy='linear')
         >>> 
         >>> # Cosine annealing
-        >>> scheduler = SmoothCurriculumScheduler(total_epochs=100, strategy='cosine')
+        >>> scheduler = CurriculumScheduler(total_epochs=100, strategy='cosine')
         >>> 
         >>> # Exponential with custom gamma
-        >>> scheduler = SmoothCurriculumScheduler(
+        >>> scheduler = CurriculumScheduler(
         ...     total_epochs=100, strategy='exponential', gamma=0.05
         ... )
         >>> 
@@ -149,120 +148,4 @@ class SmoothCurriculumScheduler:
                 "step_size": self.step_size if self.strategy == 'step' else None,
                 "power": self.power if self.strategy == 'polynomial' else None,
             }
-        }
-
-
-class CurriculumLearningScheduler:
-    """
-    Scheduler for curriculum learning progression with discrete difficulty levels.
-    
-    Manages the transition from easy to hard samples during training,
-    following a curriculum learning approach. This scheduler applies to
-    both text and image augmentation strategies.
-    
-    Note: For smooth, continuous difficulty progression, use SmoothCurriculumScheduler instead.
-    
-    Curriculum learning is a training strategy that mimics human learning
-    by presenting training examples in a meaningful order - from easy to
-    hard. This scheduler helps implement this strategy by determining the
-    appropriate difficulty level for each training epoch.
-    
-    Args:
-        total_epochs: Total number of training epochs
-        easy_epochs: Number of epochs to train on easy samples
-        medium_epochs: Number of epochs to train on medium samples
-        hard_epochs: Number of epochs to train on hard samples (remaining epochs)
-        smooth_transition: If True, returns difficulty as float (0.0-1.0) based on 
-                          the discrete level, enabling smoother transitions
-        
-    Example:
-        >>> # Discrete levels
-        >>> scheduler = CurriculumLearningScheduler(total_epochs=30)
-        >>> for epoch in range(30):
-        ...     difficulty = scheduler.get_difficulty_for_epoch(epoch)
-        ...     # Returns DifficultyLevel.EASY, MEDIUM, or HARD
-        >>> 
-        >>> # Smooth transition mode
-        >>> scheduler = CurriculumLearningScheduler(total_epochs=30, smooth_transition=True)
-        >>> for epoch in range(30):
-        ...     difficulty = scheduler.get_difficulty_for_epoch(epoch)
-        ...     # Returns float: 0.0 (easy), 0.5 (medium), or 1.0 (hard)
-    """
-    
-    def __init__(
-        self,
-        total_epochs: int,
-        easy_epochs: Optional[int] = None,
-        medium_epochs: Optional[int] = None,
-        hard_epochs: Optional[int] = None,
-        smooth_transition: bool = False
-    ):
-        """Initialize the curriculum scheduler."""
-        self.total_epochs = total_epochs
-        self.smooth_transition = smooth_transition
-        
-        # Default split: 30% easy, 30% medium, 40% hard
-        if easy_epochs is None:
-            easy_epochs = int(total_epochs * 0.3)
-        if medium_epochs is None:
-            medium_epochs = int(total_epochs * 0.3)
-        if hard_epochs is None:
-            hard_epochs = total_epochs - easy_epochs - medium_epochs
-        
-        self.easy_epochs = easy_epochs
-        self.medium_epochs = medium_epochs
-        self.hard_epochs = hard_epochs
-        
-        # Validate
-        if easy_epochs + medium_epochs + hard_epochs != total_epochs:
-            raise ValueError(
-                f"Sum of easy ({easy_epochs}), medium ({medium_epochs}), "
-                f"and hard ({hard_epochs}) epochs must equal total_epochs ({total_epochs})"
-            )
-    
-    def get_difficulty_for_epoch(self, epoch: int) -> Union[DifficultyLevel, float]:
-        """
-        Get the difficulty level for a given epoch.
-        
-        This method determines which difficulty level should be used for
-        augmentation (both text and image) at a specific epoch.
-        
-        Args:
-            epoch: Current epoch number (0-indexed)
-            
-        Returns:
-            DifficultyLevel for the current epoch (EASY, MEDIUM, or HARD) if smooth_transition=False,
-            or float value (0.0, 0.5, 1.0) if smooth_transition=True
-        """
-        if epoch < self.easy_epochs:
-            level = DifficultyLevel.EASY
-            smooth_value = 0.0
-        elif epoch < self.easy_epochs + self.medium_epochs:
-            level = DifficultyLevel.MEDIUM
-            smooth_value = 0.5
-        else:
-            level = DifficultyLevel.HARD
-            smooth_value = 1.0
-        
-        return smooth_value if self.smooth_transition else level
-    
-    def get_schedule_info(self) -> dict:
-        """
-        Get information about the curriculum schedule.
-        
-        Returns:
-            Dictionary with schedule information including epoch ranges
-            for each difficulty level
-        """
-        return {
-            "total_epochs": self.total_epochs,
-            "easy_epochs": self.easy_epochs,
-            "medium_epochs": self.medium_epochs,
-            "hard_epochs": self.hard_epochs,
-            "smooth_transition": self.smooth_transition,
-            "schedule": [
-                f"Epochs 0-{self.easy_epochs-1}: EASY" + (" (0.0)" if self.smooth_transition else ""),
-                f"Epochs {self.easy_epochs}-{self.easy_epochs+self.medium_epochs-1}: MEDIUM" + (" (0.5)" if self.smooth_transition else ""),
-                f"Epochs {self.easy_epochs+self.medium_epochs}-{self.total_epochs-1}: HARD" + (" (1.0)" if self.smooth_transition else ""),
-            ]
         }

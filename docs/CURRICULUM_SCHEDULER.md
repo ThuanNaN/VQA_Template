@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `SmoothCurriculumScheduler` provides fine-grained, continuous control over curriculum learning difficulty, similar to learning rate schedulers in deep learning. Unlike the discrete `CurriculumLearningScheduler` which uses three fixed levels (EASY, MEDIUM, HARD), the smooth scheduler returns continuous difficulty values from 0.0 to 1.0.
+The `CurriculumScheduler` provides fine-grained, continuous control over curriculum learning difficulty, similar to learning rate schedulers in deep learning. Unlike the discrete `CurriculumLearningScheduler` which uses three fixed levels (EASY, MEDIUM, HARD), the smooth scheduler returns continuous difficulty values from 0.0 to 1.0.
 
 ## Why Smooth Scheduling?
 
@@ -23,7 +23,7 @@ The `SmoothCurriculumScheduler` provides fine-grained, continuous control over c
 Uniform difficulty increase throughout training.
 
 ```python
-scheduler = SmoothCurriculumScheduler(
+scheduler = CurriculumScheduler(
     total_epochs=100,
     strategy='linear'
 )
@@ -37,7 +37,7 @@ scheduler = SmoothCurriculumScheduler(
 Smooth S-curve progression (inspired by cosine annealing).
 
 ```python
-scheduler = SmoothCurriculumScheduler(
+scheduler = CurriculumScheduler(
     total_epochs=100,
     strategy='cosine'
 )
@@ -51,7 +51,7 @@ scheduler = SmoothCurriculumScheduler(
 Slow start with rapid increase toward the end.
 
 ```python
-scheduler = SmoothCurriculumScheduler(
+scheduler = CurriculumScheduler(
     total_epochs=100,
     strategy='exponential',
     gamma=0.05  # Controls growth rate
@@ -69,7 +69,7 @@ scheduler = SmoothCurriculumScheduler(
 Step-wise increases at regular intervals.
 
 ```python
-scheduler = SmoothCurriculumScheduler(
+scheduler = CurriculumScheduler(
     total_epochs=100,
     strategy='step',
     step_size=20,  # Increase every 20 epochs
@@ -87,7 +87,7 @@ scheduler = SmoothCurriculumScheduler(
 Power-law progression.
 
 ```python
-scheduler = SmoothCurriculumScheduler(
+scheduler = CurriculumScheduler(
     total_epochs=100,
     strategy='polynomial',
     power=2.0  # Quadratic progression
@@ -108,7 +108,7 @@ scheduler = SmoothCurriculumScheduler(
 Control the min/max difficulty values:
 
 ```python
-scheduler = SmoothCurriculumScheduler(
+scheduler = CurriculumScheduler(
     total_epochs=100,
     strategy='linear',
     min_difficulty=0.2,  # Start at 20% difficulty
@@ -126,7 +126,7 @@ scheduler = SmoothCurriculumScheduler(
 Keep difficulty low for initial epochs:
 
 ```python
-scheduler = SmoothCurriculumScheduler(
+scheduler = CurriculumScheduler(
     total_epochs=100,
     strategy='cosine',
     warmup_epochs=10  # First 10 epochs at min_difficulty
@@ -143,10 +143,10 @@ scheduler = SmoothCurriculumScheduler(
 ### Image Augmentation Example
 
 ```python
-from augmentation import SmoothCurriculumScheduler
+from augmentation import CurriculumScheduler
 
 # Initialize scheduler
-scheduler = SmoothCurriculumScheduler(
+scheduler = CurriculumScheduler(
     total_epochs=100,
     strategy='cosine',
     warmup_epochs=5
@@ -197,9 +197,9 @@ for epoch in range(100):
 If your augmentation class accepts difficulty as a float:
 
 ```python
-from augmentation import MaskedImageAugmentation, SmoothCurriculumScheduler
+from augmentation import MaskedImageAugmentation, CurriculumScheduler
 
-scheduler = SmoothCurriculumScheduler(total_epochs=50, strategy='cosine')
+scheduler = CurriculumScheduler(total_epochs=50, strategy='cosine')
 augmenter = MaskedImageAugmentation()
 
 for epoch in range(50):
@@ -245,9 +245,9 @@ scheduler = CurriculumLearningScheduler(
 ### When to use Smooth Scheduler
 
 ```python
-from augmentation import SmoothCurriculumScheduler
+from augmentation import CurriculumScheduler
 
-scheduler = SmoothCurriculumScheduler(
+scheduler = CurriculumScheduler(
     total_epochs=100,
     strategy='cosine',
     warmup_epochs=10
@@ -278,10 +278,10 @@ This generates comparison plots showing:
 
 ## API Reference
 
-### SmoothCurriculumScheduler
+### CurriculumScheduler
 
 ```python
-SmoothCurriculumScheduler(
+CurriculumScheduler(
     total_epochs: int,
     strategy: Literal['linear', 'cosine', 'exponential', 'step', 'polynomial'] = 'linear',
     min_difficulty: float = 0.0,
@@ -332,12 +332,12 @@ CurriculumLearningScheduler(
 
 ### Quick Start (Stable)
 ```python
-SmoothCurriculumScheduler(total_epochs=100, strategy='linear')
+CurriculumScheduler(total_epochs=100, strategy='linear')
 ```
 
 ### Recommended (Smooth)
 ```python
-SmoothCurriculumScheduler(
+CurriculumScheduler(
     total_epochs=100,
     strategy='cosine',
     warmup_epochs=10
@@ -346,7 +346,7 @@ SmoothCurriculumScheduler(
 
 ### Conservative (Gentle)
 ```python
-SmoothCurriculumScheduler(
+CurriculumScheduler(
     total_epochs=100,
     strategy='exponential',
     gamma=0.03,
@@ -356,7 +356,7 @@ SmoothCurriculumScheduler(
 
 ### Aggressive (Fast)
 ```python
-SmoothCurriculumScheduler(
+CurriculumScheduler(
     total_epochs=100,
     strategy='polynomial',
     power=3.0
@@ -365,7 +365,7 @@ SmoothCurriculumScheduler(
 
 ### Custom Range
 ```python
-SmoothCurriculumScheduler(
+CurriculumScheduler(
     total_epochs=100,
     strategy='cosine',
     min_difficulty=0.3,
@@ -394,7 +394,7 @@ else:
 
 **After:**
 ```python
-scheduler = SmoothCurriculumScheduler(total_epochs=30, strategy='cosine')
+scheduler = CurriculumScheduler(total_epochs=30, strategy='cosine')
 difficulty = scheduler.get_difficulty(epoch)  # Float: 0.0 to 1.0
 
 # Interpolate parameters

@@ -16,8 +16,7 @@ from pathlib import Path
 
 from augmentation import (
     RuleBasedTextAugmentation,
-    CurriculumLearningScheduler,
-    DifficultyLevel,
+    CurriculumScheduler,
     AugmentationFactory
 )
 
@@ -64,9 +63,9 @@ def demonstrate_vivqa_augmentation_with_images():
     # Demonstrate augmentation at different difficulty levels
     results = []
     
-    for difficulty in [DifficultyLevel.EASY, DifficultyLevel.MEDIUM, DifficultyLevel.HARD]:
+    for difficulty, name in [(0.2, "EASY"), (0.5, "MEDIUM"), (0.8, "HARD")]:
         print(f"\n{'-'*60}")
-        print(f"Processing with {difficulty.value.upper()} difficulty")
+        print(f"Processing with {name} difficulty (difficulty={difficulty})")
         print(f"{'-'*60}")
         
         augmentor = RuleBasedTextAugmentation(difficulty=difficulty, seed=42)
@@ -140,13 +139,13 @@ def demonstrate_vivqa_augmentation_with_images():
     print("Augmentation Statistics")
     print(f"{'='*60}")
     
-    for difficulty in [DifficultyLevel.EASY, DifficultyLevel.MEDIUM, DifficultyLevel.HARD]:
-        difficulty_samples = [r for r in results if r['difficulty'] == difficulty.value]
+    for difficulty, name in [(0.2, "easy"), (0.5, "medium"), (0.8, "hard")]:
+        difficulty_samples = [r for r in results if r['difficulty'] == name]
         changed_count = sum(1 for r in difficulty_samples if r['is_changed'])
         total_count = len(difficulty_samples)
         change_rate = (changed_count / total_count * 100) if total_count > 0 else 0
         
-        print(f"\n{difficulty.value.upper()}:")
+        print(f"\n{name.upper()}:")
         print(f"  Total samples: {total_count}")
         print(f"  Changed: {changed_count}")
         print(f"  Change rate: {change_rate:.1f}%")
@@ -202,9 +201,9 @@ def demonstrate_rule_based_augmentation():
     
     print("\nOriginal questions and their augmentations:\n")
     
-    for difficulty in [DifficultyLevel.EASY, DifficultyLevel.MEDIUM, DifficultyLevel.HARD]:
+    for difficulty, name in [(0.2, "EASY"), (0.5, "MEDIUM"), (0.8, "HARD")]:
         print(f"\n{'-'*60}")
-        print(f"Difficulty: {difficulty.value.upper()}")
+        print(f"Difficulty: {name} (difficulty={difficulty})")
         print(f"{'-'*60}")
         
         augmentor = RuleBasedTextAugmentation(difficulty=difficulty, seed=42)
@@ -234,7 +233,7 @@ def demonstrate_linguistic_rules():
     print("Demonstrating Vietnamese Linguistic Rules")
     print("="*60)
     
-    augmentor = RuleBasedTextAugmentation(difficulty=DifficultyLevel.HARD, seed=42)
+    augmentor = RuleBasedTextAugmentation(difficulty=0.8, seed=42)
     
     # Examples for each rule category
     rule_examples = {
@@ -285,17 +284,21 @@ def demonstrate_linguistic_rules():
 def demonstrate_curriculum_learning():
     """Demonstrate curriculum learning for text augmentation."""
     print("\n" + "="*60)
-    print("Demonstrating Curriculum Learning Schedule")
+    print("Demonstrating Smooth Curriculum Learning Schedule")
     print("="*60)
     
     total_epochs = 30
-    scheduler = CurriculumLearningScheduler(total_epochs=total_epochs)
+    scheduler = CurriculumScheduler(
+        total_epochs=total_epochs,
+        strategy='cosine',
+        warmup_ratio=0.1,
+        difficulty_range=(0.1, 0.9)
+    )
     
-    schedule_info = scheduler.get_schedule_info()
-    print(f"\nTraining Schedule for {schedule_info['total_epochs']} epochs:")
-    print(f"  - Easy epochs: {schedule_info['easy_epochs']} (epochs 0-{schedule_info['easy_epochs']-1})")
-    print(f"  - Medium epochs: {schedule_info['medium_epochs']} (epochs {schedule_info['easy_epochs']}-{schedule_info['easy_epochs']+schedule_info['medium_epochs']-1})")
-    print(f"  - Hard epochs: {schedule_info['hard_epochs']} (epochs {schedule_info['easy_epochs']+schedule_info['medium_epochs']}-{total_epochs-1})")
+    print(f"\nTraining Schedule for {total_epochs} epochs:")
+    print(f"  - Strategy: cosine")
+    print(f"  - Warmup ratio: 10%")
+    print(f"  - Difficulty range: 0.1 to 0.9")
     
     # Demonstrate text augmentation at different epochs
     sample_question = "Có bao nhiêu người trong ảnh này?"
@@ -340,7 +343,7 @@ def demonstrate_factory_pattern():
     
     augmentor = factory.create_text_augmentation(
         augmentation_type='rule-based',
-        difficulty=DifficultyLevel.MEDIUM,
+        difficulty=0.5,
         seed=42
     )
     
@@ -365,7 +368,11 @@ def demonstrate_epoch_based_augmentation():
     print("="*60)
     
     total_epochs = 30
-    scheduler = CurriculumLearningScheduler(total_epochs=total_epochs)
+    scheduler = CurriculumScheduler(
+        total_epochs=total_epochs,
+        strategy='cosine',
+        warmup_ratio=0.1
+    )
     
     sample_questions = [
         "Có gì trong bức ảnh này?",
@@ -415,10 +422,10 @@ def demonstrate_batch_augmentation():
         "Người này đang ở đâu?",
     ]
     
-    augmentor = RuleBasedTextAugmentation(difficulty=DifficultyLevel.MEDIUM, seed=42)
+    augmentor = RuleBasedTextAugmentation(difficulty=0.5, seed=42)
     
     print(f"\nAugmenting batch of {len(question_batch)} questions:")
-    print(f"Difficulty: {augmentor.difficulty.value.upper()}")
+    print(f"Difficulty: {augmentor.difficulty}")
     
     augmented_batch = []
     changed_count = 0
@@ -449,11 +456,15 @@ def demonstrate_integration_with_training():
     print("""
 # Example integration in training pipeline:
 
-from augmentation import RuleBasedTextAugmentation, CurriculumLearningScheduler
+from augmentation import RuleBasedTextAugmentation, CurriculumScheduler
 
 # Initialize scheduler
 total_epochs = 30
-scheduler = CurriculumLearningScheduler(total_epochs=total_epochs)
+scheduler = CurriculumScheduler(
+    total_epochs=total_epochs,
+    strategy='cosine',
+    warmup_ratio=0.1
+)
 
 # Training loop
 for epoch in range(total_epochs):
@@ -501,9 +512,9 @@ def demonstrate_comparison_with_without_augmentation():
         "Bức ảnh này được chụp ở đâu?",
     ]
     
-    augmentor_hard = RuleBasedTextAugmentation(difficulty=DifficultyLevel.HARD, seed=42)
+    augmentor_hard = RuleBasedTextAugmentation(difficulty=0.8, seed=42)
     
-    print("\nGenerating multiple augmented versions (HARD difficulty):")
+    print("\nGenerating multiple augmented versions (difficulty=0.8):")
     
     for question in questions:
         print(f"\nOriginal: {question}")

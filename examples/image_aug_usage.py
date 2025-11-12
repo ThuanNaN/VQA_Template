@@ -10,8 +10,7 @@ sys.path.append('..')
 
 from augmentation import (
     MaskedImageAugmentation,
-    CurriculumLearningScheduler,
-    DifficultyLevel
+    CurriculumScheduler
 )
 from PIL import Image
 import os
@@ -41,9 +40,9 @@ def demonstrate_difficulty_levels():
     print(f"\nOriginal image size: {sample_image.size}")
     
     # Test each difficulty level
-    for difficulty in [DifficultyLevel.EASY, DifficultyLevel.MEDIUM, DifficultyLevel.HARD]:
+    for difficulty, name in [(0.2, "EASY"), (0.5, "MEDIUM"), (0.8, "HARD")]:
         print(f"\n{'-'*60}")
-        print(f"Testing {difficulty.value.upper()} difficulty level")
+        print(f"Testing {name} difficulty level (difficulty={difficulty})")
         print(f"{'-'*60}")
         
         augmentor = MaskedImageAugmentation(difficulty=difficulty, seed=42)
@@ -67,27 +66,27 @@ def demonstrate_difficulty_levels():
 def demonstrate_curriculum_learning():
     """Demonstrate curriculum learning schedule."""
     print("\n" + "="*60)
-    print("Demonstrating Curriculum Learning Schedule")
+    print("Demonstrating Smooth Curriculum Learning Schedule")
     print("="*60)
     
     total_epochs = 30
-    scheduler = CurriculumLearningScheduler(total_epochs=total_epochs)
+    scheduler = CurriculumScheduler(
+        total_epochs=total_epochs,
+        strategy='cosine',
+        warmup_ratio=0.1,
+        difficulty_range=(0.1, 0.9)
+    )
     
-    schedule_info = scheduler.get_schedule_info()
-    print(f"\nTraining Schedule for {schedule_info['total_epochs']} epochs:")
-    print(f"  - Easy epochs: {schedule_info['easy_epochs']}")
-    print(f"  - Medium epochs: {schedule_info['medium_epochs']}")
-    print(f"  - Hard epochs: {schedule_info['hard_epochs']}")
-    
-    print("\nEpoch-by-epoch breakdown:")
-    for schedule_line in schedule_info['schedule']:
-        print(f"  {schedule_line}")
+    print(f"\nTraining Schedule for {total_epochs} epochs:")
+    print(f"  - Strategy: cosine")
+    print(f"  - Warmup ratio: 10%")
+    print(f"  - Difficulty range: 0.1 to 0.9")
     
     # Show some example epochs
     print("\nExample difficulty levels for specific epochs:")
     for epoch in [0, 5, 9, 10, 15, 18, 19, 25, 29]:
         difficulty = scheduler.get_difficulty_for_epoch(epoch)
-        print(f"  Epoch {epoch:2d}: {difficulty.value.upper()}")
+        print(f"  Epoch {epoch:2d}: difficulty={difficulty:.3f}")
 
 
 def demonstrate_epoch_based_augmentation():
@@ -98,18 +97,22 @@ def demonstrate_epoch_based_augmentation():
     
     # Create curriculum schedule
     total_epochs = 30
-    scheduler = CurriculumLearningScheduler(total_epochs=total_epochs)
+    scheduler = CurriculumScheduler(
+        total_epochs=total_epochs,
+        strategy='cosine',
+        warmup_ratio=0.1
+    )
     
     # Create a sample image
     width, height = 224, 224
     sample_image = Image.new('RGB', (width, height), color='lightblue')
     
     print("\nCreating augmentors for different epochs:")
-    for epoch in [0, 9, 18, 29]:  # Sample epochs from each difficulty level
+    for epoch in [0, 9, 18, 29]:  # Sample epochs
         difficulty = scheduler.get_difficulty_for_epoch(epoch)
         augmentor = MaskedImageAugmentation(difficulty=difficulty, seed=42)
         
-        print(f"\n  Epoch {epoch} ({difficulty.value.upper()}):")
+        print(f"\n  Epoch {epoch} (difficulty={difficulty:.3f}):")
         info = augmentor.get_augmentation_info()
         print(f"    Mask ratio: {info['mask_ratio']:.2%}")
         
@@ -128,7 +131,7 @@ def demonstrate_selective_augmentations():
     width, height = 224, 224
     sample_image = Image.new('RGB', (width, height), color='coral')
     
-    augmentor = MaskedImageAugmentation(difficulty=DifficultyLevel.MEDIUM, seed=42)
+    augmentor = MaskedImageAugmentation(difficulty=0.5, seed=42)
     
     print("\nApplying different combinations of augmentations:")
     
@@ -180,24 +183,25 @@ def demonstrate_custom_schedule():
     print("Demonstrating Custom Curriculum Schedule")
     print("="*60)
     
-    # Custom schedule: longer easy period, shorter hard period
+    # Custom schedule: polynomial strategy with specific warmup
     total_epochs = 50
-    scheduler = CurriculumLearningScheduler(
+    scheduler = CurriculumScheduler(
         total_epochs=total_epochs,
-        easy_epochs=20,    # 40% of training
-        medium_epochs=20,  # 40% of training
-        hard_epochs=10     # 20% of training
+        strategy='polynomial',
+        power=2.0,
+        warmup_ratio=0.2,
+        difficulty_range=(0.1, 0.95)
     )
     
-    schedule_info = scheduler.get_schedule_info()
-    print(f"\nCustom Schedule for {schedule_info['total_epochs']} epochs:")
-    print(f"  - Easy epochs: {schedule_info['easy_epochs']} (40%)")
-    print(f"  - Medium epochs: {schedule_info['medium_epochs']} (40%)")
-    print(f"  - Hard epochs: {schedule_info['hard_epochs']} (20%)")
+    print(f"\nCustom Schedule for {total_epochs} epochs:")
+    print(f"  - Strategy: polynomial (power=2.0)")
+    print(f"  - Warmup ratio: 20%")
+    print(f"  - Difficulty range: 0.1 to 0.95")
     
-    print("\nSchedule breakdown:")
-    for schedule_line in schedule_info['schedule']:
-        print(f"  {schedule_line}")
+    print("\nSchedule breakdown (sample epochs):")
+    for epoch in [0, 5, 10, 20, 30, 40, 49]:
+        difficulty = scheduler.get_difficulty_for_epoch(epoch)
+        print(f"  Epoch {epoch:2d}: difficulty={difficulty:.3f}")
 
 
 def demonstrate_with_real_image():
@@ -246,8 +250,8 @@ def demonstrate_with_real_image():
             print(f"Saved original: {original_output}")
             
             # Apply augmentation at different difficulty levels
-            for difficulty in [DifficultyLevel.EASY, DifficultyLevel.MEDIUM, DifficultyLevel.HARD]:
-                print(f"\n  Applying {difficulty.value.upper()} augmentation:")
+            for difficulty, name in [(0.2, "easy"), (0.5, "medium"), (0.8, "hard")]:
+                print(f"\n  Applying {name.upper()} augmentation (difficulty={difficulty}):")
                 
                 augmentor = MaskedImageAugmentation(difficulty=difficulty, seed=42)
                 
@@ -260,7 +264,7 @@ def demonstrate_with_real_image():
                 augmented = augmentor.augment(image)
                 
                 # Save augmented image
-                output_path = os.path.join(output_dir, f"{img_name}_{difficulty.value}.jpg")
+                output_path = os.path.join(output_dir, f"{img_name}_{name}.jpg")
                 augmented.save(output_path)
                 print(f"    - Saved to: {output_path}")
             
@@ -292,14 +296,14 @@ def main():
     print("All demonstrations completed successfully!")
     print("="*60)
     print("\nKey Takeaways:")
-    print("  1. Use DifficultyLevel (EASY, MEDIUM, HARD) to control augmentation intensity")
-    print("  2. CurriculumLearningScheduler manages progression during training")
+    print("  1. Use float difficulty (0.0-1.0) to control augmentation intensity smoothly")
+    print("  2. CurriculumScheduler manages progressive difficulty during training")
     print("  3. MaskedImageAugmentation provides flexible, configurable augmentations")
     print("  4. Selective augmentations can be applied as needed")
     print("  5. Integration with training loop is straightforward")
     print("\nNext Steps:")
     print("  - Integrate with your VQA training pipeline")
-    print("  - Experiment with different curriculum schedules")
+    print("  - Experiment with different curriculum strategies (linear, cosine, exponential, etc.)")
     print("  - Tune augmentation parameters for your dataset")
     print("  - Monitor model performance across difficulty levels")
     print()

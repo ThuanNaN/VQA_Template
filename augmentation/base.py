@@ -8,20 +8,6 @@ strategies with curriculum learning support.
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Union
 from PIL import Image
-from enum import Enum
-
-
-class DifficultyLevel(Enum):
-    """
-    Difficulty levels for curriculum learning.
-    
-    EASY: Minimal augmentation - slight changes
-    MEDIUM: Moderate augmentation - partial transformations
-    HARD: Aggressive augmentation - heavy transformations
-    """
-    EASY = "easy"
-    MEDIUM = "medium"
-    HARD = "hard"
 
 
 class BaseAugmentation(ABC):
@@ -33,20 +19,20 @@ class BaseAugmentation(ABC):
     learning support.
     
     Args:
-        difficulty: Difficulty level for augmentation
+        difficulty: Difficulty level for augmentation (float 0.0-1.0)
+                   0.0 = easiest (minimal augmentation)
+                   1.0 = hardest (maximum augmentation)
         seed: Random seed for reproducibility
     """
     
     def __init__(
         self,
-        difficulty: Union[DifficultyLevel, str] = DifficultyLevel.EASY,
+        difficulty: Union[int, float] = 0.0,
         seed: Optional[int] = None
     ):
         """Initialize the augmentation strategy."""
-        if isinstance(difficulty, str):
-            difficulty = DifficultyLevel(difficulty.lower())
-        
-        self.difficulty = difficulty
+        # Ensure difficulty is float in valid range
+        self.difficulty = float(max(0.0, min(1.0, difficulty)))
         self.seed = seed
         self._configure_parameters()
     
@@ -56,7 +42,8 @@ class BaseAugmentation(ABC):
         Configure augmentation parameters based on difficulty level.
         
         This method should set instance variables that control the strength
-        of augmentation operations.
+        of augmentation operations. Use self.difficulty (0.0-1.0) to interpolate
+        parameters smoothly.
         """
         pass
     
@@ -84,17 +71,14 @@ class BaseAugmentation(ABC):
         """
         pass
     
-    def set_difficulty(self, difficulty: Union[DifficultyLevel, str]):
+    def set_difficulty(self, difficulty: Union[int, float]):
         """
         Update the difficulty level and reconfigure parameters.
         
         Args:
-            difficulty: New difficulty level
+            difficulty: New difficulty level (float 0.0-1.0)
         """
-        if isinstance(difficulty, str):
-            difficulty = DifficultyLevel(difficulty.lower())
-        
-        self.difficulty = difficulty
+        self.difficulty = float(max(0.0, min(1.0, difficulty)))
         self._configure_parameters()
 
 
@@ -161,5 +145,5 @@ class NoAugmentation(BaseAugmentation):
         """Return info indicating no augmentation."""
         return {
             "type": "NoAugmentation",
-            "difficulty": self.difficulty.value,
+            "difficulty": self.difficulty,
         }
