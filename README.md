@@ -43,6 +43,15 @@ python download.py
 python vis_bbox.py --host 0.0.0.0 --port 7860
 ```
 
+- Vietnamese Rule-Based Data Augmentation
+
+```bash
+cd examples
+python test_augmentation.py
+```
+
+See [docs/AUGMENTATION.md](docs/AUGMENTATION.md) for detailed documentation on using the Vietnamese rule-based augmentation system.
+
 ## Dataset
 
 - [ ] [MSCOCO](https://cocodataset.org/#download) - Microsoft Common Objects in Context
@@ -55,7 +64,7 @@ python vis_bbox.py --host 0.0.0.0 --port 7860
 
 ## Paper
 
-- [ ] [Data Augmentation for Visual Question Answering](https://aclanthology.org/W17-3529.pdf)
+- [x] [Data Augmentation for Visual Question Answering](https://aclanthology.org/W17-3529.pdf) - Implemented as Vietnamese rule-based augmentation
 - [ ] [Discovering the Unknown Knowns: Turning Implicit Knowledge in the Dataset into Explicit Training Examples for Visual Question Answering](https://arxiv.org/abs/2109.06122)
 - [ ] [Stacked Attention Networks for Image Question Answering](https://arxiv.org/pdf/1511.02274)
 - [ ] [LXMERT: Learning Cross-Modality Encoder Representations from Transformers](https://arxiv.org/abs/1908.07490)
