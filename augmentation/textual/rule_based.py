@@ -147,13 +147,13 @@ class RuleBasedTextAugmentation(BaseTextAugmentation):
     def _configure_parameters(self) -> None:
         """Configure augmentation frequency based on difficulty."""
         if self.difficulty == DifficultyLevel.EASY:
-            self.apply_prob = 0.2  # 20% chance to apply augmentation
+            self.apply_prob = 0.05  # 5% chance to apply augmentation
             self.max_replacements = 1  # Replace at most 1 word
         elif self.difficulty == DifficultyLevel.MEDIUM:
-            self.apply_prob = 0.5  # 50% chance to apply augmentation
+            self.apply_prob = 0.15  # 15% chance to apply augmentation
             self.max_replacements = 2  # Replace at most 2 words
         else:  # HARD
-            self.apply_prob = 0.8  # 80% chance to apply augmentation
+            self.apply_prob = 0.5  # 50% chance to apply augmentation
             self.max_replacements = 3  # Replace at most 3 words
     
     def augment(self, text: str, **kwargs) -> str:

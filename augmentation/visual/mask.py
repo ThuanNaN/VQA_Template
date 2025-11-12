@@ -65,11 +65,11 @@ class MaskedImageAugmentation(BaseImageAugmentation):
     def _get_default_mask_ratio(self) -> float:
         """Get default mask ratio based on difficulty level."""
         if self.difficulty == DifficultyLevel.EASY:
-            return 0.15  # 15% masking for easy samples
+            return 0.05  # 5% masking for easy samples
         elif self.difficulty == DifficultyLevel.MEDIUM:
-            return 0.50  # 50% masking for medium samples
+            return 0.15  # 15% masking for medium samples
         else:  # HARD
-            return 0.75  # 75% masking for hard samples (MAE paper uses 75%)
+            return 0.5  # 50% masking for hard samples (MAE paper uses 75%)
     
     def _configure_parameters(self):
         """Configure augmentation parameters based on difficulty level."""
