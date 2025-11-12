@@ -319,7 +319,7 @@ scheduler = CurriculumScheduler(total_epochs=total_epochs)
 # Training loop
 for epoch in range(total_epochs):
     # Get difficulty for current epoch
-    difficulty = scheduler.get_difficulty_for_epoch(epoch)
+    difficulty = scheduler.get_difficulty(epoch)
     
     # Create augmentor for current epoch
     augmentor = MaskedImageAugmentation(
@@ -483,7 +483,7 @@ augmentor.augment(
 ```python
 scheduler = CurriculumScheduler(total_epochs=30)
 for epoch in range(30):
-    difficulty = scheduler.get_difficulty_for_epoch(epoch)
+    difficulty = scheduler.get_difficulty(epoch)
     augmentor = MaskedImageAugmentation(difficulty=difficulty)
 ```
 
@@ -545,7 +545,7 @@ Track how augmentation affects learning:
 import wandb
 
 for epoch in range(total_epochs):
-    difficulty = scheduler.get_difficulty_for_epoch(epoch)
+    difficulty = scheduler.get_difficulty(epoch)
     augmentor = MaskedImageAugmentation(difficulty=difficulty)
     
     # Log augmentation config

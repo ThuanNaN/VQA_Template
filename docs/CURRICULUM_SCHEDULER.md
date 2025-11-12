@@ -381,7 +381,7 @@ CurriculumScheduler(
 **Before:**
 ```python
 scheduler = CurriculumScheduler(total_epochs=30)
-difficulty = scheduler.get_difficulty_for_epoch(epoch)  # DifficultyLevel.EASY/MEDIUM/HARD
+difficulty = scheduler.get_difficulty(epoch)  # DifficultyLevel.EASY/MEDIUM/HARD
 
 # Use with if-else
 if difficulty == DifficultyLevel.EASY:

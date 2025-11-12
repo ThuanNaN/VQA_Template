@@ -128,7 +128,7 @@ scheduler = SmoothCurriculumScheduler(
 # Training loop
 for epoch in range(30):
     # Get difficulty for current epoch (returns float 0.0-1.0)
-    difficulty = scheduler.get_difficulty_for_epoch(epoch)
+    difficulty = scheduler.get_difficulty(epoch)
     augmentor = MaskedImageAugmentation(difficulty=difficulty, seed=42)
     
     # Train with appropriate difficulty
@@ -523,7 +523,7 @@ scheduler = SmoothCurriculumScheduler(
 
 # Training loop with both augmentations
 for epoch in range(30):
-    difficulty = scheduler.get_difficulty_for_epoch(epoch)
+    difficulty = scheduler.get_difficulty(epoch)
     
     # Create augmentors for current epoch
     image_aug = factory.create_image_augmentation('masked', difficulty=difficulty)

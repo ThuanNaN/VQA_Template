@@ -85,7 +85,7 @@ def demonstrate_curriculum_learning():
     # Show some example epochs
     print("\nExample difficulty levels for specific epochs:")
     for epoch in [0, 5, 9, 10, 15, 18, 19, 25, 29]:
-        difficulty = scheduler.get_difficulty_for_epoch(epoch)
+        difficulty = scheduler.get_difficulty(epoch)
         print(f"  Epoch {epoch:2d}: difficulty={difficulty:.3f}")
 
 
@@ -109,7 +109,7 @@ def demonstrate_epoch_based_augmentation():
     
     print("\nCreating augmentors for different epochs:")
     for epoch in [0, 9, 18, 29]:  # Sample epochs
-        difficulty = scheduler.get_difficulty_for_epoch(epoch)
+        difficulty = scheduler.get_difficulty(epoch)
         augmentor = MaskedImageAugmentation(difficulty=difficulty, seed=42)
         
         print(f"\n  Epoch {epoch} (difficulty={difficulty:.3f}):")
@@ -200,7 +200,7 @@ def demonstrate_custom_schedule():
     
     print("\nSchedule breakdown (sample epochs):")
     for epoch in [0, 5, 10, 20, 30, 40, 49]:
-        difficulty = scheduler.get_difficulty_for_epoch(epoch)
+        difficulty = scheduler.get_difficulty(epoch)
         print(f"  Epoch {epoch:2d}: difficulty={difficulty:.3f}")
 
 
