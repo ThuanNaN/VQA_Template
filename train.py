@@ -4,13 +4,29 @@ import wandb
 import argparse
 import torch
 from dotenv import load_dotenv
-from dataset import ViVQADataset, OpenViVQADataset
-from models import SimpleVQAConfig, SimpleVQA
-from transformers import (
-    AutoTokenizer, AutoProcessor, 
-    TrainingArguments, Trainer, EarlyStoppingCallback
+from dataset import (
+    ViVQADataset, 
+    OpenViVQADataset,
+    ViTextVQADataset,
+    EVJVQADataset,
+    ViVQAXDataset,
+    ViOCRVQADataset,
 )
-from utils import compute_metrics
+from models import (
+    SimpleVQAConfig, 
+    SimpleVQA,
+)
+from transformers import (
+    AutoTokenizer, 
+    AutoProcessor, 
+    TrainingArguments, 
+    Trainer, 
+    EarlyStoppingCallback,
+)
+from utils import (
+    compute_metrics, 
+    seed_everything,
+)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -25,7 +41,7 @@ if __name__ == '__main__':
                         help='Text model name (default: %(default)s)')
     parser.add_argument('--seed', type=int, default=71,
                         help='random seed (default: %(default)s)')
-    parser.add_argument('--dataset_name', type=str, default='ViVQA', choices=['ViVQA', 'OpenViVQA'],
+    parser.add_argument('--dataset_name', type=str, default='vivqa', choices=['vivqa', 'openvivqa', 'vitextvqa', 'evjvqa', 'vivqax', 'viocrvqa'],
                         help='Dataset name (default: %(default)s)')
     parser.add_argument('--batch_size', type=int, default=64,
                         help='Mini-batch size for each iteration (default: %(default)s)')
@@ -60,6 +76,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_threads', type=int, default=8,
                         help='Number of threads for torch (default: %(default)s)')
     args = parser.parse_args()
+    seed_everything(args.seed)
 
     # Setup wandb
     RUN_NAME = f"{args.dataset_name}-{args.run_name}-{args.seed}"
@@ -90,7 +107,7 @@ if __name__ == '__main__':
     vis_processor = AutoProcessor.from_pretrained(vis_model_name, use_fast=True)
     text_processor = AutoTokenizer.from_pretrained(text_model_name)
 
-    if args.dataset_name == 'ViVQA':
+    if args.dataset_name == 'vivqa':
         train_dataset = ViVQADataset(
             ann_path="data/vivqa/train.csv",
             img_dir="data/vivqa/images",
@@ -105,7 +122,7 @@ if __name__ == '__main__':
             vis_processor=vis_processor,
             max_length=args.seq_len
         )
-    elif args.dataset_name == 'OpenViVQA':
+    elif args.dataset_name == 'openvivqa':
         train_dataset = OpenViVQADataset(
             ann_path="data/openvivqa/vlsp2023_train_data.json",
             img_dir="data/openvivqa/training-images",
@@ -116,6 +133,66 @@ if __name__ == '__main__':
         val_dataset = OpenViVQADataset(
             ann_path="data/openvivqa/vlsp2023_dev_data.json",
             img_dir="data/openvivqa/dev-images",
+            text_processor=text_processor,
+            vis_processor=vis_processor,
+            max_length=args.seq_len
+        )
+    elif args.dataset_name == 'vitextvqa':
+        train_dataset = ViTextVQADataset(
+            ann_path="data/vitextvqa/train.json",
+            img_dir="data/vitextvqa/images",
+            text_processor=text_processor,
+            vis_processor=vis_processor,
+            max_length=args.seq_len
+        )
+        val_dataset = ViTextVQADataset(
+            ann_path="data/vitextvqa/val.json",
+            img_dir="data/vitextvqa/images",
+            text_processor=text_processor,
+            vis_processor=vis_processor,
+            max_length=args.seq_len
+        )
+    elif args.dataset_name == 'evjvqa':
+        train_dataset = EVJVQADataset(
+            ann_path="data/evjvqa/train.json",
+            img_dir="data/evjvqa/images",
+            text_processor=text_processor,
+            vis_processor=vis_processor,
+            max_length=args.seq_len
+        )
+        val_dataset = EVJVQADataset(
+            ann_path="data/evjvqa/val.json",
+            img_dir="data/evjvqa/images",
+            text_processor=text_processor,
+            vis_processor=vis_processor,
+            max_length=args.seq_len
+        )
+    elif args.dataset_name == 'vivqax':
+        train_dataset = ViVQAXDataset(
+            ann_path="data/vivqax/train.csv",
+            img_dir="data/vivqax/images",
+            text_processor=text_processor,
+            vis_processor=vis_processor,
+            max_length=args.seq_len
+        )
+        val_dataset = ViVQAXDataset(
+            ann_path="data/vivqax/test.csv",
+            img_dir="data/vivqax/images",
+            text_processor=text_processor,
+            vis_processor=vis_processor,
+            max_length=args.seq_len
+        )
+    elif args.dataset_name == 'viocrvqa':
+        train_dataset = ViOCRVQADataset(
+            ann_path="data/viocrvqa/train.json",
+            img_dir="data/viocrvqa/images",
+            text_processor=text_processor,
+            vis_processor=vis_processor,
+            max_length=args.seq_len
+        )
+        val_dataset = ViOCRVQADataset(
+            ann_path="data/viocrvqa/val.json",
+            img_dir="data/viocrvqa/images",
             text_processor=text_processor,
             vis_processor=vis_processor,
             max_length=args.seq_len
