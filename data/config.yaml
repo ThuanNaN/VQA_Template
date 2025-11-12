@@ -71,3 +71,11 @@ EVJVQA:
     "rm ./evjvqa/train-images.zip",
     "mv ./evjvqa/train-images ./evjvqa/images",
   ]
+
+
+ViVQA-X:
+  url: https://huggingface.co/datasets/VLAI-AIVN/ViVQA-X
+  path_save: ./vivqax
+  download_type: "huggingface"
+  cmd: []
+

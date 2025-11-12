@@ -173,9 +173,11 @@ cython_debug/
 data/MSCOCO/
 data/openvivqa/
 data/vivqa/
+data/vivqax/
+data/viocrvqa/
+data/vitextvqa/
 
 *.tsv
-*.sh
 test.ipynb
 runs/
 wandb/

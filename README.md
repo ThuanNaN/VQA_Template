@@ -30,16 +30,28 @@ python create_vivqa_image.py
 
 ### Tools
 
+- Download object detection features
+
+```bash
+cd ./data/obj36_feat
+python download.py
+```
+
 - Visulize bbox
 
 ```bash
-python vis_bbox.py --host 0.0.0.0 --port7860
+python vis_bbox.py --host 0.0.0.0 --port 7860
 ```
 
 ## Dataset
 
-- [ ] [ViVQA](https://github.com/kh4nh12/ViVQA)
-- [ ] [OpenViVQA](https://huggingface.co/datasets/uitnlp/OpenViVQA-dataset)
+- [ ] [MSCOCO](https://cocodataset.org/#download) - Microsoft Common Objects in Context
+- [ ] [ViVQA](https://github.com/kh4nh12/ViVQA) - Vietnamese Visual Question Answering Dataset
+- [ ] [OpenViVQA](https://huggingface.co/datasets/uitnlp/OpenViVQA-dataset) - Open Domain Vietnamese Visual Question Answering Dataset
+- [ ] [ViVQA-X](https://huggingface.co/datasets/VLAI-AIVN/ViVQA-X) - Vietnamese VQA with Natural Language Explanations
+- [ ] [ViOCR-VQA](https://huggingface.co/datasets/VLAI-AIVN/ViOCR-VQA) - Vietnamese Visual Question Answering Dataset with OCR
+- [ ] [EVJ-VQA](https://huggingface.co/datasets/dinhanhx/evjvqa) - Vietnamese Visual Question Answering Dataset for e-commerce domain
+- [ ] [ViTextVQA](https://huggingface.co/datasets/minhquan6203/ViTextVQA) - Vietnamese Text-based Visual Question Answering Dataset
 
 ## Paper
 
