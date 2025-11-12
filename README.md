@@ -5,6 +5,7 @@ A comprehensive Vietnamese Visual Question Answering (VQA) dataset template and 
 ## 📚 Documentation
 
 **NEW**: Comprehensive [Vietnamese VQA Dataset Survey](docs/README.md) covering:
+
 - Detailed analysis of 6 Vietnamese VQA datasets (ViVQA, OpenViVQA, ViTextVQA, ViOCRVQA, ViCLEVR, EVJVQA)
 - Dataset building methodologies and generation approaches
 - Quality assessments and improvement recommendations
@@ -80,16 +81,16 @@ This project supports [Weights & Biases (wandb)](https://docs.wandb.ai/) for exp
 2. Get your API key from [wandb.ai/authorize](https://wandb.ai/authorize)
 3. Copy `.env.example` to `.env` and add your API key:
 
-```bash
-cp .env.example .env
-# Edit .env and set WANDB_API_KEY=your_api_key_here
-```
+  ```bash
+  cp .env.example .env
+  # Edit .env and set WANDB_API_KEY=your_api_key_here
+  ```
 
 4. Alternatively, login via command line:
 
-```bash
-wandb login
-```
+  ```bash
+  wandb login
+  ```
 
 #### Training with wandb
 
@@ -119,6 +120,7 @@ When enabled, the following metrics and information are automatically logged:
 #### View Results
 
 After training starts, you'll see a link to your wandb dashboard where you can:
+
 - Monitor training progress in real-time
 - Compare different experiments
 - Visualize metrics with interactive charts
@@ -139,6 +141,7 @@ Example: `ViVQA-baseline-71`
 ## Dataset
 
 For a comprehensive analysis of Vietnamese VQA datasets, see our [Dataset Survey Documentation](docs/README.md):
+
 - 📊 [Complete Dataset Survey](docs/DATASET_SURVEY.md) - Detailed analysis of building methods, generation approaches, and quality
 - ⚡ [Quick Reference Guide](docs/DATASET_QUICK_REFERENCE.md) - Dataset comparison and key findings
 - 🔧 [Template Improvements](docs/TEMPLATE_IMPROVEMENTS.md) - 100+ concrete template examples
@@ -157,7 +160,7 @@ For a comprehensive analysis of Vietnamese VQA datasets, see our [Dataset Survey
 
 ## Paper
 
-- [x] [Data Augmentation for Visual Question Answering](https://aclanthology.org/W17-3529.pdf) - Implemented as Vietnamese rule-based augmentation
+- [ ] [Data Augmentation for Visual Question Answering](https://aclanthology.org/W17-3529.pdf) - Implemented as Vietnamese rule-based augmentation
 - [ ] [Discovering the Unknown Knowns: Turning Implicit Knowledge in the Dataset into Explicit Training Examples for Visual Question Answering](https://arxiv.org/abs/2109.06122)
 - [ ] [Stacked Attention Networks for Image Question Answering](https://arxiv.org/pdf/1511.02274)
 - [ ] [LXMERT: Learning Cross-Modality Encoder Representations from Transformers](https://arxiv.org/abs/1908.07490)
@@ -173,13 +176,12 @@ We welcome contributions to improve Vietnamese VQA datasets and tools! See our [
 - Documentation improvements
 
 **Top Contribution Opportunities**:
+
 1. ✨ Expand ViVQA templates (35+ new templates)
 2. 🛒 Create EVJVQA Vietnamese e-commerce templates
 3. 🔬 Integrate ViCLEVR dataset support
 4. 🤖 Build modern LLM-based generation pipeline
 5. 📊 Develop quality analysis tools
-
-👉 [Start Contributing](docs/CONTRIBUTING.md)
 
 ## Citation
 

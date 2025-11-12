@@ -136,18 +136,22 @@ This will run a comprehensive test suite demonstrating all augmentation capabili
 ### Example Outputs
 
 **Question Word Variation:**
+
 - Original: `Cái gì trong ảnh này?`
 - Augmented: `Thứ gì trong ảnh này?`
 
 **Synonym Replacement:**
+
 - Original: `Người này đang làm gì?`
 - Augmented: `Người này đang thực hiện gì?`
 
 **Demonstrative Variation:**
+
 - Original: `Con chó này ở đâu?`
 - Augmented: `Con chó đây ở đâu?`
 
 **Combined:**
+
 - Original: `Màu của chiếc xe này là gì?`
 - Augmented: `Màu của chiếc xe đây là cái gì?`
 
@@ -245,11 +249,3 @@ To add new augmentation rules:
 2. Add rules to appropriate category in `utils/augmentation.py`
 3. Test with `examples/test_augmentation.py`
 4. Document the new rules in this README
-
-## License
-
-This implementation follows the same license as the VQA_Template project.
-
-## Contact
-
-For questions or issues related to the augmentation module, please open an issue on the GitHub repository.
