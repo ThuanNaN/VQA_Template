@@ -16,6 +16,11 @@ A comprehensive Vietnamese Visual Question Answering (VQA) dataset template and 
 
 ## 🚀 Quick Start
 
+## Requirements
+
+- Git LFS - [Installation-Linux](https://github.com/git-lfs/git-lfs/blob/main/INSTALLING.md)
+- Python 3.12.9
+
 ### Installation
 
 ```bash
@@ -41,11 +46,6 @@ python download.py
 cd scripts
 python create_vivqa_image.py
 ```
-
-## Requirements
-
-- Git LFS - [Installation-Linux](https://github.com/git-lfs/git-lfs/blob/main/INSTALLING.md)
-- Python 3.12.9
 
 Download dataset
 
