@@ -8,7 +8,7 @@ augmentation objects based on type and configuration.
 from typing import Optional, Union
 from .base import BaseImageAugmentation, BaseTextAugmentation, DifficultyLevel, NoAugmentation
 from .visual.mask import MaskedImageAugmentation
-from .textual.rule_based import SimpleTextAugmentation, RuleBasedTextAugmentation
+from .textual.rule_based import RuleBasedTextAugmentation
 
 
 class AugmentationFactory:
@@ -30,12 +30,10 @@ class AugmentationFactory:
     # Registry of available augmentation types
     _IMAGE_AUGMENTATIONS = {
         'masked': MaskedImageAugmentation,
-        'mae': MaskedImageAugmentation,  # Alias
         'none': NoAugmentation,
     }
     
     _TEXT_AUGMENTATIONS = {
-        'simple': SimpleTextAugmentation,
         'rule-based': RuleBasedTextAugmentation,
         'none': NoAugmentation,
     }

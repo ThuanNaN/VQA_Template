@@ -1,3 +1,3 @@
-from .rule_based import SimpleTextAugmentation, RuleBasedTextAugmentation
+from .rule_based import RuleBasedTextAugmentation
 
-__all__ = ['SimpleTextAugmentation', 'RuleBasedTextAugmentation']
+__all__ = ['RuleBasedTextAugmentation']
