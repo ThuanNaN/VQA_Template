@@ -57,9 +57,12 @@ if __name__ == '__main__':
                         help='Number of threads for torch (default: %(default)s)')
     args = parser.parse_args()
 
-    os.environ["WANDB_PROJECT"]=args.wandb_name
-    os.environ["WANDB_LOG_MODEL"]="false"
-    os.environ["WANDB_WATCH"]="false"
+    # Setup wandb
+    if args.report_to_wandb:
+        os.environ["WANDB_PROJECT"] = args.wandb_name
+        os.environ["WANDB_LOG_MODEL"] = "false"
+        os.environ["WANDB_WATCH"] = "false"
+    
     RUN_NAME = f"{args.dataset_name}-{args.run_name}-{args.seed}"
     SAVE_DIR = Path(args.output_dir)
     SAVE_DIR.mkdir(exist_ok=True)
@@ -163,5 +166,27 @@ if __name__ == '__main__':
         callbacks=[early_stopping],
     )
 
+    # Log hyperparameters to wandb
+    if args.report_to_wandb:
+        wandb.config.update({
+            "vis_model_name": args.vis_model_name,
+            "text_model_name": args.text_model_name,
+            "dataset_name": args.dataset_name,
+            "batch_size": args.batch_size,
+            "seq_len": args.seq_len,
+            "epochs": args.epochs,
+            "learning_rate": args.learning_rate,
+            "weight_decay": args.weight_decay,
+            "gradient_accumulation": args.gradient_accumulation,
+            "warmup_steps": args.warmup_steps,
+            "patience": args.patience,
+            "fp16": args.fp16,
+            "seed": args.seed,
+            "num_classes": len(train_dataset.label_encoder),
+            "hidden_size": config.hidden_size,
+        })
+
     trainer.train()
-    wandb.finish()
+    
+    if args.report_to_wandb:
+        wandb.finish()
