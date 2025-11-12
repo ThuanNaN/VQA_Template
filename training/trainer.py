@@ -124,12 +124,13 @@ class VQATrainer(Trainer):
         logger.info("Curriculum Learning enabled")
         logger.info(f"Schedule: {self.curriculum_scheduler.get_schedule_info()}")
     
-    def log(self, logs: Dict[str, float]) -> None:
+    def log(self, logs: Dict[str, float], start_time: float = None) -> None:
         """
         Enhanced logging with curriculum learning info.
         
         Args:
             logs: Dictionary of metrics to log
+            start_time: Optional start time for logging (passed by Trainer)
         """
         # Add curriculum difficulty to logs if available
         if self.curriculum_scheduler is not None and self.state.epoch is not None:
@@ -137,4 +138,7 @@ class VQATrainer(Trainer):
             difficulty = self.curriculum_scheduler.get_difficulty_for_epoch(epoch)
             logs['curriculum_difficulty'] = difficulty.value
         
-        super().log(logs)
+        if start_time is not None:
+            super().log(logs, start_time)
+        else:
+            super().log(logs)
