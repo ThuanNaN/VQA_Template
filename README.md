@@ -30,6 +30,13 @@ python create_vivqa_image.py
 
 ### Tools
 
+- Download object detection features
+
+```bash
+cd ./data/obj36_feat
+python download.py
+```
+
 - Visulize bbox
 
 ```bash
