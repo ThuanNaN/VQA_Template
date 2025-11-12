@@ -85,6 +85,12 @@ if __name__ == "__main__":
             if config[dataset].get('cmd', None):
                 for cmd in config[dataset]['cmd']:
                     subprocess.run(cmd, shell=True)
+            
+            # Remove .git folder if exists
+            git_folder = os.path.join(path_save, '.git')
+            if os.path.exists(git_folder):
+                subprocess.run(['rm', '-rf', git_folder])
+                print(f"Removed .git folder from {path_save}")
         else:
             print(f"Dataset {dataset} already exists in {path_save}. Skipping...")
     
