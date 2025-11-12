@@ -1,0 +1,407 @@
+"""
+Text augmentation for VQA with Curriculum Learning support.
+
+This module implements text augmentation strategies that can be used
+with curriculum learning to progressively increase difficulty.
+"""
+
+import random
+from typing import Optional, Union, Dict, Any
+from ..base import BaseTextAugmentation, DifficultyLevel
+
+
+class SimpleTextAugmentation(BaseTextAugmentation):
+    """
+    Simple text augmentation with curriculum learning support.
+    
+    Implements basic text augmentation techniques:
+    - Random word deletion
+    - Random word swapping
+    - Synonym replacement (Vietnamese-specific)
+    
+    The strength of augmentation varies by difficulty level.
+    
+    Args:
+        difficulty: Difficulty level for curriculum learning
+        seed: Random seed for reproducibility
+    """
+    
+    def __init__(
+        self,
+        difficulty: Union[DifficultyLevel, str] = DifficultyLevel.EASY,
+        seed: Optional[int] = None
+    ):
+        """Initialize the text augmentation."""
+        self.rng = random.Random(seed)
+        super().__init__(difficulty=difficulty, seed=seed)
+    
+    def _configure_parameters(self):
+        """Configure augmentation parameters based on difficulty."""
+        if self.difficulty == DifficultyLevel.EASY:
+            # Easy: Minimal changes
+            self.deletion_prob = 0.05  # 5% chance to delete a word
+            self.swap_prob = 0.05      # 5% chance to swap words
+            self.synonym_prob = 0.1    # 10% chance to replace with synonym
+            
+        elif self.difficulty == DifficultyLevel.MEDIUM:
+            # Medium: Moderate changes
+            self.deletion_prob = 0.10
+            self.swap_prob = 0.10
+            self.synonym_prob = 0.20
+            
+        else:  # HARD
+            # Hard: More aggressive changes
+            self.deletion_prob = 0.15
+            self.swap_prob = 0.15
+            self.synonym_prob = 0.30
+        
+        # Vietnamese question word variations
+        self.question_words = {
+            "gì": ["cái gì", "thứ gì"],
+            "cái gì": ["gì", "thứ gì"],
+            "ai": ["người nào"],
+            "đâu": ["nơi nào", "ở đâu"],
+            "ở đâu": ["đâu", "nơi nào"],
+            "khi nào": ["lúc nào"],
+            "lúc nào": ["khi nào"],
+            "bao nhiêu": ["mấy"],
+            "mấy": ["bao nhiêu"],
+        }
+        
+        # Common Vietnamese words that shouldn't be deleted
+        self.protected_words = {
+            "là", "có", "không", "được", "bị", "đang", "sẽ", "đã",
+            "?", ".", ",", "!", "trong", "của", "và", "hay"
+        }
+    
+    def augment(self, text: str, **kwargs) -> str:
+        """
+        Apply text augmentation.
+        
+        Args:
+            text: Text string to augment
+            **kwargs: Additional options
+            
+        Returns:
+            Augmented text string
+        """
+        # Apply augmentation techniques
+        text = self._synonym_replacement(text)
+        text = self._random_swap(text)
+        text = self._random_deletion(text)
+        
+        return text
+    
+    def _synonym_replacement(self, text: str) -> str:
+        """Replace words with synonyms (question words)."""
+        words = text.split()
+        
+        for i, word in enumerate(words):
+            if word.lower() in self.question_words:
+                if self.rng.random() < self.synonym_prob:
+                    synonyms = self.question_words[word.lower()]
+                    if synonyms:
+                        words[i] = self.rng.choice(synonyms)
+        
+        return ' '.join(words)
+    
+    def _random_swap(self, text: str) -> str:
+        """Randomly swap two words in the text."""
+        words = text.split()
+        
+        if len(words) < 2:
+            return text
+        
+        if self.rng.random() < self.swap_prob:
+            # Choose two random positions
+            idx1 = self.rng.randint(0, len(words) - 1)
+            idx2 = self.rng.randint(0, len(words) - 1)
+            
+            # Swap
+            words[idx1], words[idx2] = words[idx2], words[idx1]
+        
+        return ' '.join(words)
+    
+    def _random_deletion(self, text: str) -> str:
+        """Randomly delete words from the text."""
+        words = text.split()
+        
+        if len(words) <= 2:  # Don't delete if text is too short
+            return text
+        
+        new_words = []
+        for word in words:
+            # Don't delete protected words
+            if word.lower() in self.protected_words:
+                new_words.append(word)
+            else:
+                # Randomly keep or delete
+                if self.rng.random() > self.deletion_prob:
+                    new_words.append(word)
+        
+        # Make sure we didn't delete everything
+        if len(new_words) == 0:
+            return text
+        
+        return ' '.join(new_words)
+    
+    def get_augmentation_info(self) -> dict:
+        """Get augmentation configuration info."""
+        return {
+            'type': 'SimpleTextAugmentation',
+            'difficulty': self.difficulty.value,
+            'deletion_prob': self.deletion_prob,
+            'swap_prob': self.swap_prob,
+            'synonym_prob': self.synonym_prob,
+            'seed': self.seed
+        }
+
+
+class RuleBasedTextAugmentation(BaseTextAugmentation):
+    """
+    Rule-based text augmentation using rich linguistic rules for Vietnamese.
+    
+    This augmentation strategy uses sophisticated Vietnamese linguistic rules including:
+    - Question word variations (gì, cái gì, thứ gì)
+    - Color synonyms (đỏ, đỏ thẫm, son)
+    - Verb synonyms (có, có phải, có phải là)
+    - Demonstratives (này, đây, nầy)
+    - Adjective synonyms (lớn, to, rộng)
+    - Vietnamese-specific paraphrasing
+    
+    Curriculum learning controls the FREQUENCY of augmentation:
+    - EASY: 20% of texts are augmented
+    - MEDIUM: 50% of texts are augmented
+    - HARD: 80% of texts are augmented
+    
+    Based on "Data Augmentation for Visual Question Answering" (ACL 2017)
+    Paper: https://aclanthology.org/W17-3529.pdf
+    """
+    
+    def __init__(self, difficulty: DifficultyLevel = DifficultyLevel.MEDIUM, seed: Optional[int] = None):
+        super().__init__(difficulty, seed)
+        self.rng = random.Random(seed)
+        self._init_vietnamese_rules()
+        self._configure_parameters()
+    
+    def _init_vietnamese_rules(self) -> None:
+        """Initialize Vietnamese linguistic rules for augmentation."""
+        # Question word variations
+        self.question_word_variations = {
+            "gì": ["cái gì", "thứ gì", "điều gì"],
+            "cái gì": ["gì", "thứ gì", "điều gì"],
+            "thứ gì": ["gì", "cái gì", "điều gì"],
+            "điều gì": ["gì", "cái gì", "thứ gì"],
+            "đâu": ["nơi nào", "chỗ nào", "ở đâu"],
+            "ở đâu": ["đâu", "nơi nào", "chỗ nào"],
+            "nơi nào": ["đâu", "ở đâu", "chỗ nào"],
+            "chỗ nào": ["đâu", "ở đâu", "nơi nào"],
+            "khi nào": ["lúc nào", "bao giờ"],
+            "lúc nào": ["khi nào", "bao giờ"],
+            "bao giờ": ["khi nào", "lúc nào"],
+            "ai": ["người nào"],
+            "người nào": ["ai"],
+            "bao nhiêu": ["mấy"],
+            "mấy": ["bao nhiêu"],
+            "như thế nào": ["ra sao", "thế nào"],
+            "thế nào": ["như thế nào", "ra sao"],
+            "ra sao": ["như thế nào", "thế nào"],
+        }
+        
+        # Color synonyms
+        self.color_synonyms = {
+            "đỏ": ["đỏ thẫm", "son"],
+            "đỏ thẫm": ["đỏ", "son"],
+            "son": ["đỏ", "đỏ thẫm"],
+            "xanh": ["xanh lam", "xanh dương"],
+            "xanh lam": ["xanh", "xanh dương"],
+            "xanh dương": ["xanh", "xanh lam"],
+            "vàng": ["vàng óng", "vàng tươi"],
+            "vàng óng": ["vàng", "vàng tươi"],
+            "vàng tươi": ["vàng", "vàng óng"],
+            "trắng": ["trắng tinh", "trắng bóc"],
+            "trắng tinh": ["trắng", "trắng bóc"],
+            "trắng bóc": ["trắng", "trắng tinh"],
+            "đen": ["đen tuyền", "đen thui"],
+            "đen tuyền": ["đen", "đen thui"],
+            "đen thui": ["đen", "đen tuyền"],
+        }
+        
+        # Verb synonyms
+        self.verb_synonyms = {
+            "làm": ["thực hiện", "tiến hành"],
+            "thực hiện": ["làm", "tiến hành"],
+            "tiến hành": ["làm", "thực hiện"],
+            "có": ["có phải", "có phải là"],
+            "có phải": ["có", "có phải là"],
+            "có phải là": ["có", "có phải"],
+            "đứng": ["đứng lên", "dựng"],
+            "đứng lên": ["đứng", "dựng"],
+            "dựng": ["đứng", "đứng lên"],
+            "ngồi": ["ngồi xuống"],
+            "ngồi xuống": ["ngồi"],
+            "nhìn": ["nhìn thấy", "trông thấy", "xem"],
+            "nhìn thấy": ["nhìn", "trông thấy", "xem"],
+            "trông thấy": ["nhìn", "nhìn thấy", "xem"],
+            "xem": ["nhìn", "nhìn thấy", "trông thấy"],
+        }
+        
+        # Demonstrative pronoun variations
+        self.demonstrative_variations = {
+            "này": ["đây", "nầy"],
+            "đây": ["này", "nầy"],
+            "nầy": ["này", "đây"],
+            "kia": ["đó", "ấy"],
+            "đó": ["kia", "ấy"],
+            "ấy": ["kia", "đó"],
+        }
+        
+        # Adjective synonyms
+        self.adjective_synonyms = {
+            "lớn": ["to", "rộng"],
+            "to": ["lớn", "rộng"],
+            "rộng": ["lớn", "to"],
+            "nhỏ": ["bé", "tí"],
+            "bé": ["nhỏ", "tí"],
+            "tí": ["nhỏ", "bé"],
+            "cao": ["cao lớn"],
+            "cao lớn": ["cao"],
+            "thấp": ["lùn"],
+            "lùn": ["thấp"],
+            "đẹp": ["xinh", "đẹp đẽ"],
+            "xinh": ["đẹp", "đẹp đẽ"],
+            "đẹp đẽ": ["đẹp", "xinh"],
+            "xấu": ["xấu xí"],
+            "xấu xí": ["xấu"],
+        }
+        
+        # Question starters
+        self.question_starters = {
+            "có phải": ["có phải là", "phải chăng"],
+            "có phải là": ["có phải", "phải chăng"],
+            "phải chăng": ["có phải", "có phải là"],
+        }
+        
+        # Combine all synonym dictionaries
+        self.all_synonyms = {
+            **self.question_word_variations,
+            **self.color_synonyms,
+            **self.verb_synonyms,
+            **self.demonstrative_variations,
+            **self.adjective_synonyms,
+            **self.question_starters,
+        }
+    
+    def _configure_parameters(self) -> None:
+        """Configure augmentation frequency based on difficulty."""
+        if self.difficulty == DifficultyLevel.EASY:
+            self.apply_prob = 0.2  # 20% chance to apply augmentation
+            self.max_replacements = 1  # Replace at most 1 word
+        elif self.difficulty == DifficultyLevel.MEDIUM:
+            self.apply_prob = 0.5  # 50% chance to apply augmentation
+            self.max_replacements = 2  # Replace at most 2 words
+        else:  # HARD
+            self.apply_prob = 0.8  # 80% chance to apply augmentation
+            self.max_replacements = 3  # Replace at most 3 words
+    
+    def augment(self, text: str, **kwargs) -> str:
+        """
+        Apply rule-based text augmentation with curriculum learning.
+        
+        Args:
+            text: Input text (question) to augment
+            **kwargs: Additional options (num_replacements, etc.)
+            
+        Returns:
+            Augmented text string
+        """
+        # Apply augmentation based on probability (curriculum learning)
+        if self.rng.random() >= self.apply_prob:
+            return text
+        
+        # Perform synonym replacement
+        num_replacements = kwargs.get('num_replacements', self.max_replacements)
+        augmented = self._replace_synonyms(text, max_replacements=num_replacements)
+        
+        return augmented
+    
+    def _replace_synonyms(self, text: str, max_replacements: int = 2) -> str:
+        """
+        Replace words with their Vietnamese synonyms.
+        
+        Args:
+            text: Input text
+            max_replacements: Maximum number of words to replace
+            
+        Returns:
+            Text with synonyms replaced
+        """
+        words = text.split()
+        replacements_made = 0
+        
+        # Find all possible replacement positions
+        replacement_candidates = []
+        for i, word in enumerate(words):
+            word_lower = word.lower()
+            
+            # Check for multi-word phrases first (up to 3 words)
+            for phrase_len in [3, 2, 1]:
+                if i + phrase_len <= len(words):
+                    phrase = ' '.join([words[j].lower() for j in range(i, i + phrase_len)])
+                    if phrase in self.all_synonyms:
+                        replacement_candidates.append((i, phrase_len, phrase))
+                        break
+        
+        # Shuffle candidates for randomness
+        self.rng.shuffle(replacement_candidates)
+        
+        # Track which positions have been modified
+        modified_positions = set()
+        
+        # Apply replacements
+        for start_idx, phrase_len, phrase in replacement_candidates:
+            if replacements_made >= max_replacements:
+                break
+            
+            # Check if any position in this phrase has been modified
+            if any(pos in modified_positions for pos in range(start_idx, start_idx + phrase_len)):
+                continue
+            
+            # Get synonym
+            synonyms = self.all_synonyms[phrase]
+            if synonyms:
+                replacement = self.rng.choice(synonyms)
+                
+                # Replace the phrase
+                replacement_words = replacement.split()
+                for j, rep_word in enumerate(replacement_words):
+                    if start_idx + j < len(words):
+                        # Preserve capitalization of first word
+                        if j == 0 and words[start_idx].istitle():
+                            words[start_idx + j] = rep_word.capitalize()
+                        else:
+                            words[start_idx + j] = rep_word
+                
+                # If replacement is shorter, remove extra words
+                if len(replacement_words) < phrase_len:
+                    for _ in range(phrase_len - len(replacement_words)):
+                        words.pop(start_idx + len(replacement_words))
+                
+                # Mark positions as modified
+                for pos in range(start_idx, start_idx + max(phrase_len, len(replacement_words))):
+                    modified_positions.add(pos)
+                
+                replacements_made += 1
+        
+        return ' '.join(words)
+    
+    def get_augmentation_info(self) -> Dict[str, Any]:
+        """Get augmentation configuration info."""
+        return {
+            'type': 'RuleBasedTextAugmentation',
+            'difficulty': self.difficulty.value,
+            'apply_prob': self.apply_prob,
+            'max_replacements': self.max_replacements,
+            'num_rules': len(self.all_synonyms),
+            'seed': self.seed
+        }

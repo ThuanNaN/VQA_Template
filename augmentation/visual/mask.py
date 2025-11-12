@@ -13,23 +13,10 @@ import random
 import numpy as np
 from PIL import Image, ImageFilter, ImageEnhance
 from typing import Tuple, Optional, Union, List
-from enum import Enum
+from ..base import BaseImageAugmentation, DifficultyLevel
 
 
-class DifficultyLevel(Enum):
-    """
-    Difficulty levels for curriculum learning.
-    
-    EASY: Minimal augmentation - slight color/brightness changes
-    MEDIUM: Moderate augmentation - partial masking, blur, distortion
-    HARD: Aggressive augmentation - heavy masking, strong transformations
-    """
-    EASY = "easy"
-    MEDIUM = "medium"
-    HARD = "hard"
-
-
-class MaskedImageAugmentation:
+class MaskedImageAugmentation(BaseImageAugmentation):
     """
     Image augmentation framework with Curriculum Learning support.
     
@@ -59,17 +46,8 @@ class MaskedImageAugmentation:
         seed: Optional[int] = None
     ):
         """Initialize the augmentation framework."""
-        if isinstance(difficulty, str):
-            difficulty = DifficultyLevel(difficulty.lower())
-        
-        self.difficulty = difficulty
         self.patch_size = patch_size
-        self.seed = seed
-        
-        # Set default mask ratio based on difficulty if not provided
-        if mask_ratio is None:
-            mask_ratio = self._get_default_mask_ratio()
-        self.mask_ratio = mask_ratio
+        self._mask_ratio = mask_ratio
         
         # Create random number generator for reproducibility
         if seed is not None:
@@ -78,8 +56,8 @@ class MaskedImageAugmentation:
         else:
             self.rng = np.random.RandomState()
         
-        # Configure augmentation parameters based on difficulty
-        self._configure_parameters()
+        # Call parent constructor which will call _configure_parameters
+        super().__init__(difficulty=difficulty, seed=seed)
     
     def _get_default_mask_ratio(self) -> float:
         """Get default mask ratio based on difficulty level."""
@@ -92,6 +70,12 @@ class MaskedImageAugmentation:
     
     def _configure_parameters(self):
         """Configure augmentation parameters based on difficulty level."""
+        # Set default mask ratio based on difficulty if not provided
+        if self._mask_ratio is None:
+            self.mask_ratio = self._get_default_mask_ratio()
+        else:
+            self.mask_ratio = self._mask_ratio
+        
         if self.difficulty == DifficultyLevel.EASY:
             # Easy: Minimal transformations
             self.color_jitter_strength = 0.1
