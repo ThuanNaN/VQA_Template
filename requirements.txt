@@ -10,6 +10,7 @@ torchvision
 transformers[torch]==4.57.1
 huggingface_hub
 sentencepiece==0.2.0
-matplotlib==3.10.1
-gradio==5.20.1
+matplotlib==3.10.7
+gradio==5.49.1
 wandb==0.19.8
+pillow==11.3.0
