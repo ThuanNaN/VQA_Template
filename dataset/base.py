@@ -4,15 +4,21 @@ import pandas as pd
 from torch.utils.data import Dataset
 from PIL import Image
 import torch
+from typing import Optional, Callable
+
 
 class BaseDataset(Dataset):
     def __init__(self, ann_path, img_dir, 
                  text_processor, vis_processor,
+                 image_augmentation: Optional[Callable] = None,
+                 text_augmentation: Optional[Callable] = None,
                  **kwargs):
         super(BaseDataset, self).__init__()
         self.img_dir = img_dir
         self.text_processor = text_processor
         self.vis_processor = vis_processor
+        self.image_augmentation = image_augmentation
+        self.text_augmentation = text_augmentation
         self.label_encoder = self.get_label_encoder()
         self.data = self.load_data(ann_path)
         self.kwargs = kwargs
@@ -23,9 +29,20 @@ class BaseDataset(Dataset):
     def __getitem__(self, idx):
         img_path = self.data['img_paths'][idx]
         pil_image = Image.open(img_path).convert('RGB')
+        
+        # Apply image augmentation if provided
+        if self.image_augmentation is not None:
+            pil_image = self.image_augmentation(pil_image)
+        
         image = self.vis_processor(pil_image, return_tensors="pt")["pixel_values"].squeeze(0)
         
-        question = self.text_processor(self.data['questions'][idx], 
+        question_text = self.data['questions'][idx]
+        
+        # Apply text augmentation if provided
+        if self.text_augmentation is not None:
+            question_text = self.text_augmentation(question_text)
+        
+        question = self.text_processor(question_text, 
                                        return_tensors="pt", 
                                        padding="max_length", 
                                        truncation=True, 
@@ -96,3 +113,21 @@ class BaseDataset(Dataset):
 
     def get_label_encoder(self):
         raise NotImplementedError
+    
+    def set_image_augmentation(self, augmentation: Optional[Callable]):
+        """
+        Set or update the image augmentation function.
+        
+        Args:
+            augmentation: Callable that takes PIL Image and returns augmented PIL Image
+        """
+        self.image_augmentation = augmentation
+    
+    def set_text_augmentation(self, augmentation: Optional[Callable]):
+        """
+        Set or update the text augmentation function.
+        
+        Args:
+            augmentation: Callable that takes text string and returns augmented text string
+        """
+        self.text_augmentation = augmentation
