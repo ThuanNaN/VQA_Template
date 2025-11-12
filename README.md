@@ -45,6 +45,8 @@ python vis_bbox.py --host 0.0.0.0 --port 7860
 
 ## Dataset
 
+For a comprehensive analysis of Vietnamese VQA datasets, including their construction methodologies, generation approaches, and quality assessments, see [Dataset Survey Documentation](docs/DATASET_SURVEY.md).
+
 - [ ] [MSCOCO](https://cocodataset.org/#download) - Microsoft Common Objects in Context
 - [ ] [ViVQA](https://github.com/kh4nh12/ViVQA) - Vietnamese Visual Question Answering Dataset
 - [ ] [OpenViVQA](https://huggingface.co/datasets/uitnlp/OpenViVQA-dataset) - Open Domain Vietnamese Visual Question Answering Dataset
@@ -52,6 +54,7 @@ python vis_bbox.py --host 0.0.0.0 --port 7860
 - [ ] [ViOCR-VQA](https://huggingface.co/datasets/VLAI-AIVN/ViOCR-VQA) - Vietnamese Visual Question Answering Dataset with OCR
 - [ ] [EVJ-VQA](https://huggingface.co/datasets/dinhanhx/evjvqa) - Vietnamese Visual Question Answering Dataset for e-commerce domain
 - [ ] [ViTextVQA](https://huggingface.co/datasets/minhquan6203/ViTextVQA) - Vietnamese Text-based Visual Question Answering Dataset
+- [ ] [ViCLEVR](docs/DATASET_SURVEY.md#viclevr) - Vietnamese CLEVR Dataset (planned/placeholder)
 
 ## Paper
 
