@@ -120,14 +120,14 @@ class AugmentationFactory:
         Returns:
             Text augmentation instance
         """
-        if augmentation_type not in cls._text_augmentations:
-            available = ', '.join(cls._text_augmentations.keys())
+        if augmentation_type not in cls._TEXT_AUGMENTATIONS:
+            available = ', '.join(cls._TEXT_AUGMENTATIONS.keys())
             raise ValueError(
                 f"Unknown text augmentation type: {augmentation_type}. "
                 f"Available types: {available}"
             )
         
-        augmentation_class = cls._text_augmentations[augmentation_type]
+        augmentation_class = cls._TEXT_AUGMENTATIONS[augmentation_type]
         return augmentation_class(difficulty=difficulty, seed=seed)
     
     @classmethod
