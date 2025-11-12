@@ -9,7 +9,7 @@ from transformers import (
     AutoTokenizer, AutoProcessor, 
     TrainingArguments, Trainer, EarlyStoppingCallback
 )
-from utils import compute_metrics
+from utils import compute_metrics, seed_everything
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -56,6 +56,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_threads', type=int, default=8,
                         help='Number of threads for torch (default: %(default)s)')
     args = parser.parse_args()
+    seed_everything(args.seed)
 
     # Setup wandb
     if args.report_to_wandb:
