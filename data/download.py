@@ -5,8 +5,11 @@ import subprocess
 import dotenv
 
 dotenv.load_dotenv()
-HF_USER = os.getenv("HF_USER", None)
-HF_TOKEN = os.getenv("HF_TOKEN", None)
+HF_USER = os.getenv("HF_USER")
+HF_TOKEN = os.getenv("HF_TOKEN")
+
+if not HF_USER or not HF_TOKEN:
+    raise ValueError("Hugging Face credentials are not set in environment variables.")
 
 
 def download_direct(url, path_save):
@@ -27,6 +30,14 @@ def download_huggingface(url, path_save):
         repo_url = f"https://{HF_USER}:{HF_TOKEN}@{data_url}"
         subprocess.run(
             ["git", "clone", repo_url, path_save],
+            check=True,
+            text=True,
+            capture_output=True
+        )
+        # Pull LFS files after cloning
+        subprocess.run(
+            ["git", "lfs", "pull"],
+            cwd=path_save,
             check=True,
             text=True,
             capture_output=True
