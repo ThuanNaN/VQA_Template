@@ -36,7 +36,7 @@ class AugmentationFactory:
     
     _TEXT_AUGMENTATIONS = {
         'simple': SimpleTextAugmentation,
-        'rule_based': RuleBasedTextAugmentation,
+        'rule-based': RuleBasedTextAugmentation,
         'none': NoAugmentation,
     }
     

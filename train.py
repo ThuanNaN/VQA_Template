@@ -152,7 +152,7 @@ def parse_args():
         '--text_augmentation_type',
         type=str,
         default='simple',
-        choices=['simple', 'rule_based', 'none'],
+        choices=['simple', 'rule-based', 'none'],
         help='Type of text augmentation (default: %(default)s)'
     )
     
