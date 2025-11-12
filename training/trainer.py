@@ -199,7 +199,7 @@ class SampleObservationCallback(TrainerCallback):
         }
         
         outputs = model(**batch)
-        prediction = outputs.logits.argmax(dim=-1).item()
+        prediction = outputs["logits"].argmax(dim=-1).item()
         ground_truth = augmented_data['label'].item()
         
         return {
