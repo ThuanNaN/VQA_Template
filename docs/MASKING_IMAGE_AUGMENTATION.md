@@ -309,8 +309,7 @@ print(f"Mask ratio: {config['mask_ratio']:.2%}")
 ```python
 from augmentation import (
     MaskedImageAugmentation,
-    CurriculumLearningScheduler,
-    create_augmentor_for_epoch
+    CurriculumLearningScheduler
 )
 
 # Setup curriculum schedule
@@ -319,16 +318,16 @@ scheduler = CurriculumLearningScheduler(total_epochs=total_epochs)
 
 # Training loop
 for epoch in range(total_epochs):
+    # Get difficulty for current epoch
+    difficulty = scheduler.get_difficulty_for_epoch(epoch)
+    
     # Create augmentor for current epoch
-    augmentor = create_augmentor_for_epoch(
-        epoch=epoch,
-        scheduler=scheduler,
+    augmentor = MaskedImageAugmentation(
+        difficulty=difficulty,
         patch_size=16,
         seed=42
     )
     
-    # Get current difficulty
-    difficulty = scheduler.get_difficulty_for_epoch(epoch)
     print(f"Epoch {epoch}: {difficulty.value} difficulty")
     
     # Your training code here
@@ -484,7 +483,8 @@ augmentor.augment(
 ```python
 scheduler = CurriculumLearningScheduler(total_epochs=30)
 for epoch in range(30):
-    augmentor = create_augmentor_for_epoch(epoch, scheduler)
+    difficulty = scheduler.get_difficulty_for_epoch(epoch)
+    augmentor = MaskedImageAugmentation(difficulty=difficulty)
 ```
 
 ❌ **DON'T**: Jump directly to HARD difficulty
@@ -545,7 +545,8 @@ Track how augmentation affects learning:
 import wandb
 
 for epoch in range(total_epochs):
-    augmentor = create_augmentor_for_epoch(epoch, scheduler)
+    difficulty = scheduler.get_difficulty_for_epoch(epoch)
+    augmentor = MaskedImageAugmentation(difficulty=difficulty)
     
     # Log augmentation config
     config = augmentor.get_augmentation_info()

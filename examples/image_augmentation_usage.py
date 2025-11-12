@@ -11,8 +11,7 @@ sys.path.append('..')
 from augmentation import (
     MaskedImageAugmentation,
     CurriculumLearningScheduler,
-    DifficultyLevel,
-    create_augmentor_for_epoch
+    DifficultyLevel
 )
 from PIL import Image
 import os
@@ -107,8 +106,8 @@ def demonstrate_epoch_based_augmentation():
     
     print("\nCreating augmentors for different epochs:")
     for epoch in [0, 9, 18, 29]:  # Sample epochs from each difficulty level
-        augmentor = create_augmentor_for_epoch(epoch, scheduler, seed=42)
         difficulty = scheduler.get_difficulty_for_epoch(epoch)
+        augmentor = MaskedImageAugmentation(difficulty=difficulty, seed=42)
         
         print(f"\n  Epoch {epoch} ({difficulty.value.upper()}):")
         info = augmentor.get_augmentation_info()

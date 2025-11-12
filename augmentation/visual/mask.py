@@ -310,33 +310,3 @@ class MaskedImageAugmentation(BaseImageAugmentation):
             "apply_flip": self.apply_flip,
             "crop_scale": self.crop_scale,
         }
-
-
-def create_augmentor_for_epoch(
-    epoch: int,
-    scheduler: CurriculumLearningScheduler,
-    patch_size: int = 16,
-    seed: Optional[int] = None
-) -> MaskedImageAugmentation:
-    """
-    Create an image augmentor configured for the current epoch.
-    
-    Convenience function to create an augmentor with the appropriate
-    difficulty level based on the curriculum learning schedule.
-    
-    Args:
-        epoch: Current epoch number
-        scheduler: CurriculumLearningScheduler instance
-        patch_size: Size of patches for masking
-        seed: Random seed for reproducibility
-        
-    Returns:
-        MaskedImageAugmentation instance configured for the epoch
-    """
-    difficulty = scheduler.get_difficulty_for_epoch(epoch)
-    return MaskedImageAugmentation(
-        difficulty=difficulty,
-        patch_size=patch_size,
-        seed=seed
-    )
-

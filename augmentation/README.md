@@ -114,15 +114,16 @@ augmented_questions = augmentor.augment(question, num_augmentations=3)
 ### Curriculum Learning
 
 ```python
-from augmentation import CurriculumLearningScheduler, create_augmentor_for_epoch
+from augmentation import CurriculumLearningScheduler, MaskedImageAugmentation
 
 # Create scheduler for 30 epochs
 scheduler = CurriculumLearningScheduler(total_epochs=30)
 
 # Training loop
 for epoch in range(30):
-    # Get augmentor for current epoch
-    augmentor = create_augmentor_for_epoch(epoch, scheduler, seed=42)
+    # Get difficulty for current epoch
+    difficulty = scheduler.get_difficulty_for_epoch(epoch)
+    augmentor = MaskedImageAugmentation(difficulty=difficulty, seed=42)
     
     # Train with appropriate difficulty
     # ...
@@ -391,19 +392,6 @@ CurriculumLearningScheduler(
 
 - `get_difficulty_for_epoch(epoch)`: Get difficulty level for given epoch
 - `get_schedule_info()`: Get schedule information dictionary
-
-### Utility Functions
-
-```python
-create_augmentor_for_epoch(
-    epoch: int,
-    scheduler: CurriculumLearningScheduler,
-    patch_size: int = 16,
-    seed: Optional[int] = None
-) -> MaskedImageAugmentation
-```
-
-Creates an augmentor configured for the current epoch based on the curriculum schedule.
 
 ## Examples
 
