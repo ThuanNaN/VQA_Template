@@ -8,12 +8,178 @@ with curriculum learning to augment questions for VQA training.
 import sys
 sys.path.append('..')
 
+import os
+import pandas as pd
+from PIL import Image
+import json
+from pathlib import Path
+
 from augmentation import (
     RuleBasedTextAugmentation,
     CurriculumLearningScheduler,
     DifficultyLevel,
     AugmentationFactory
 )
+
+
+def demonstrate_vivqa_augmentation_with_images():
+    """
+    Demonstrate text augmentation on real ViVQA dataset samples.
+    Load real images and questions, apply augmentation, and save results.
+    """
+    print("="*60)
+    print("Demonstrating Text Augmentation on Real ViVQA Dataset")
+    print("="*60)
+    
+    # Setup paths
+    vivqa_train_path = "data/vivqa/train.csv"
+    vivqa_images_dir = "data/vivqa/images"
+    output_dir = "runs/text_aug_demo"
+    
+    # Create output directory
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    
+    # Check if data exists
+    if not os.path.exists(vivqa_train_path):
+        print(f"\n⚠️  ViVQA training data not found at: {vivqa_train_path}")
+        print("Please ensure the ViVQA dataset is downloaded.")
+        return
+    
+    if not os.path.exists(vivqa_images_dir):
+        print(f"\n⚠️  ViVQA images directory not found at: {vivqa_images_dir}")
+        print("Please ensure the ViVQA images are downloaded.")
+        return
+    
+    # Load ViVQA data
+    print(f"\nLoading ViVQA data from: {vivqa_train_path}")
+    vivqa_data = pd.read_csv(vivqa_train_path)
+    print(f"Total samples in dataset: {len(vivqa_data)}")
+    
+    # Select a diverse sample of questions
+    num_samples = 10
+    sample_data = vivqa_data.head(num_samples)
+    
+    print(f"\nSelected {num_samples} samples for augmentation demonstration")
+    
+    # Demonstrate augmentation at different difficulty levels
+    results = []
+    
+    for difficulty in [DifficultyLevel.EASY, DifficultyLevel.MEDIUM, DifficultyLevel.HARD]:
+        print(f"\n{'-'*60}")
+        print(f"Processing with {difficulty.value.upper()} difficulty")
+        print(f"{'-'*60}")
+        
+        augmentor = RuleBasedTextAugmentation(difficulty=difficulty, seed=42)
+        info = augmentor.get_augmentation_info()
+        
+        print(f"Configuration:")
+        print(f"  - Augmentation probability: {info['apply_prob']:.0%}")
+        print(f"  - Max replacements per question: {info['max_replacements']}")
+        print(f"  - Number of linguistic rules: {info['num_rules']}")
+        
+        difficulty_results = []
+        
+        for idx, row in sample_data.iterrows():
+            img_id = str(row['img_id']).zfill(12)
+            img_path = os.path.join(vivqa_images_dir, f"{img_id}.jpg")
+            
+            # Check if image exists
+            if not os.path.exists(img_path):
+                print(f"⚠️  Image not found: {img_path}")
+                continue
+            
+            # Load image
+            try:
+                image = Image.open(img_path).convert('RGB')
+            except Exception as e:
+                print(f"⚠️  Error loading image {img_path}: {e}")
+                continue
+            
+            original_question = row['question']
+            answer = row['answer']
+            question_type = row['type']
+            
+            # Apply text augmentation
+            augmented_question = augmentor.augment(original_question)
+            
+            # Store results
+            result_entry = {
+                'img_id': img_id,
+                'img_path': img_path,
+                'difficulty': difficulty.value,
+                'original_question': original_question,
+                'augmented_question': augmented_question,
+                'answer': answer,
+                'type': question_type,
+                'is_changed': original_question != augmented_question
+            }
+            difficulty_results.append(result_entry)
+            results.append(result_entry)
+            
+            # Display result
+            status = "✓ CHANGED" if result_entry['is_changed'] else "○ NO CHANGE"
+            print(f"\n{status} - Image: {img_id}")
+            print(f"  Original:  {original_question}")
+            print(f"  Augmented: {augmented_question}")
+            print(f"  Answer: {answer}")
+        
+        # Save difficulty-specific results
+        difficulty_output_path = os.path.join(output_dir, f"vivqa_augmented_{difficulty.value}.json")
+        with open(difficulty_output_path, 'w', encoding='utf-8') as f:
+            json.dump(difficulty_results, f, ensure_ascii=False, indent=2)
+        print(f"\n✓ Saved {difficulty.value} difficulty results to: {difficulty_output_path}")
+    
+    # Save combined results
+    combined_output_path = os.path.join(output_dir, "vivqa_augmented_all.json")
+    with open(combined_output_path, 'w', encoding='utf-8') as f:
+        json.dump(results, f, ensure_ascii=False, indent=2)
+    print(f"\n✓ Saved all results to: {combined_output_path}")
+    
+    # Generate statistics
+    print(f"\n{'='*60}")
+    print("Augmentation Statistics")
+    print(f"{'='*60}")
+    
+    for difficulty in [DifficultyLevel.EASY, DifficultyLevel.MEDIUM, DifficultyLevel.HARD]:
+        difficulty_samples = [r for r in results if r['difficulty'] == difficulty.value]
+        changed_count = sum(1 for r in difficulty_samples if r['is_changed'])
+        total_count = len(difficulty_samples)
+        change_rate = (changed_count / total_count * 100) if total_count > 0 else 0
+        
+        print(f"\n{difficulty.value.upper()}:")
+        print(f"  Total samples: {total_count}")
+        print(f"  Changed: {changed_count}")
+        print(f"  Change rate: {change_rate:.1f}%")
+    
+    # Create a CSV summary
+    csv_output_path = os.path.join(output_dir, "vivqa_augmented_summary.csv")
+    results_df = pd.DataFrame(results)
+    results_df.to_csv(csv_output_path, index=False, encoding='utf-8')
+    print(f"\n✓ Saved CSV summary to: {csv_output_path}")
+    
+    # Display examples of different augmentation types
+    print(f"\n{'='*60}")
+    print("Examples of Augmentation Changes")
+    print(f"{'='*60}")
+    
+    changed_results = [r for r in results if r['is_changed']]
+    if changed_results:
+        print("\nSuccessful augmentations:")
+        for i, result in enumerate(changed_results[:5], 1):
+            print(f"\n{i}. Image: {result['img_id']}")
+            print(f"   Original:  {result['original_question']}")
+            print(f"   Augmented: {result['augmented_question']}")
+            print(f"   Difficulty: {result['difficulty']}")
+    
+    print(f"\n{'='*60}")
+    print("ViVQA Augmentation Demonstration Complete!")
+    print(f"{'='*60}")
+    print(f"\nOutput files saved in: {output_dir}/")
+    print("  - vivqa_augmented_easy.json")
+    print("  - vivqa_augmented_medium.json")
+    print("  - vivqa_augmented_hard.json")
+    print("  - vivqa_augmented_all.json")
+    print("  - vivqa_augmented_summary.csv")
 
 
 def demonstrate_rule_based_augmentation():
@@ -364,7 +530,10 @@ def main():
     print("Rule-Based Vietnamese Text Augmentation for VQA")
     print("="*60)
     
-    # Run all demonstrations
+    # Run ViVQA augmentation demonstration first (with real data)
+    demonstrate_vivqa_augmentation_with_images()
+    
+    # Run other demonstrations
     demonstrate_rule_based_augmentation()
     demonstrate_linguistic_rules()
     demonstrate_curriculum_learning()
@@ -378,15 +547,17 @@ def main():
     print("All demonstrations completed successfully!")
     print("="*60)
     print("\nKey Takeaways:")
-    print("  1. Rule-based augmentation uses rich Vietnamese linguistic rules")
-    print("  2. Curriculum learning controls augmentation FREQUENCY:")
+    print("  1. Real ViVQA dataset successfully augmented with text transformations")
+    print("  2. Rule-based augmentation uses rich Vietnamese linguistic rules")
+    print("  3. Curriculum learning controls augmentation FREQUENCY:")
     print("     - EASY: 20% of questions augmented")
     print("     - MEDIUM: 50% of questions augmented")
     print("     - HARD: 80% of questions augmented")
-    print("  3. Multiple linguistic categories: question words, colors, verbs, etc.")
-    print("  4. Factory pattern provides easy instantiation")
-    print("  5. Seamless integration with training loops")
+    print("  4. Multiple linguistic categories: question words, colors, verbs, etc.")
+    print("  5. Factory pattern provides easy instantiation")
+    print("  6. Seamless integration with training loops")
     print("\nNext Steps:")
+    print("  - Review augmented results in runs/text_aug_demo/")
     print("  - Integrate with your VQA training pipeline")
     print("  - Experiment with different curriculum schedules")
     print("  - Combine with image augmentation for full data augmentation")

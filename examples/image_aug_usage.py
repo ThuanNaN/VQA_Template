@@ -201,41 +201,76 @@ def demonstrate_custom_schedule():
 
 
 def demonstrate_with_real_image():
-    """Demonstrate augmentation with a real image if available."""
+    """Demonstrate augmentation with real images from ViVQA dataset."""
     print("\n" + "="*60)
-    print("Demonstrating with Real Image (if available)")
+    print("Demonstrating with Real Images from ViVQA Dataset")
     print("="*60)
     
-    # Try to find a sample image in the data directory
-    potential_image_paths = [
-        "../data/vivqa/images/000000000001.jpg",
-        "../data/mscoco/train2014/COCO_train2014_000000000001.jpg",
-    ]
+    # Path to ViVQA images directory
+    vivqa_images_dir = "../data/vivqa/images"
     
-    image_path = None
-    for path in potential_image_paths:
-        if os.path.exists(path):
-            image_path = path
-            break
-    
-    if image_path:
-        print(f"\nFound image at: {image_path}")
-        image = Image.open(image_path).convert('RGB')
-        print(f"Original image size: {image.size}")
-        
-        # Apply augmentation at different difficulty levels
-        for difficulty in [DifficultyLevel.EASY, DifficultyLevel.MEDIUM, DifficultyLevel.HARD]:
-            augmentor = MaskedImageAugmentation(difficulty=difficulty, seed=42)
-            augmented = augmentor.augment(image)
-            print(f"  {difficulty.value.upper()}: Augmented successfully")
-            
-            # Optional: Save augmented images to /tmp for inspection
-            # output_path = f"/tmp/augmented_{difficulty.value}.jpg"
-            # augmented.save(output_path)
-            # print(f"    Saved to: {output_path}")
-    else:
-        print("\nNo sample images found in expected locations.")
+    if not os.path.exists(vivqa_images_dir):
+        print("\nViVQA images directory not found.")
         print("Skipping real image demonstration.")
+        return
+    
+    # Get first 3 images from the directory
+    image_files = sorted([f for f in os.listdir(vivqa_images_dir) if f.endswith('.jpg')])[:3]
+    
+    if not image_files:
+        print("\nNo images found in ViVQA directory.")
+        print("Skipping real image demonstration.")
+        return
+    
+    # Create output directory for augmented images
+    output_dir = "../runs/image_aug_demo"
+    os.makedirs(output_dir, exist_ok=True)
+    print(f"\nOutput directory: {output_dir}")
+    
+    # Process each sample image
+    for img_file in image_files:
+        image_path = os.path.join(vivqa_images_dir, img_file)
+        print(f"\n{'-'*60}")
+        print(f"Processing: {img_file}")
+        print(f"{'-'*60}")
+        
+        try:
+            # Load the image
+            image = Image.open(image_path).convert('RGB')
+            print(f"Original image size: {image.size}")
+            
+            # Save original image
+            img_name = os.path.splitext(img_file)[0]
+            original_output = os.path.join(output_dir, f"{img_name}_original.jpg")
+            image.save(original_output)
+            print(f"Saved original: {original_output}")
+            
+            # Apply augmentation at different difficulty levels
+            for difficulty in [DifficultyLevel.EASY, DifficultyLevel.MEDIUM, DifficultyLevel.HARD]:
+                print(f"\n  Applying {difficulty.value.upper()} augmentation:")
+                
+                augmentor = MaskedImageAugmentation(difficulty=difficulty, seed=42)
+                
+                # Get augmentation info
+                info = augmentor.get_augmentation_info()
+                print(f"    - Mask ratio: {info['mask_ratio']:.2%}")
+                print(f"    - Color jitter: {info['color_jitter_strength']}")
+                
+                # Apply augmentation
+                augmented = augmentor.augment(image)
+                
+                # Save augmented image
+                output_path = os.path.join(output_dir, f"{img_name}_{difficulty.value}.jpg")
+                augmented.save(output_path)
+                print(f"    - Saved to: {output_path}")
+            
+        except Exception as e:
+            print(f"Error processing {img_file}: {str(e)}")
+            continue
+    
+    print(f"\n{'='*60}")
+    print(f"All augmented images saved to: {output_dir}")
+    print(f"{'='*60}")
 
 
 def main():

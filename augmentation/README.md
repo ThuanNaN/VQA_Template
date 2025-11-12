@@ -399,12 +399,12 @@ Complete examples are available in the `examples/` directory:
 
 **Visual Augmentation:**
 
-1. `image_augmentation_usage.py` - Basic usage and feature demonstration
+1. `image_aug_usage.py` - Basic usage and feature demonstration
 2. Dataset integration examples in VQA dataset files
 
 **Textual Augmentation:**
 
-1. `text_augmentation_usage.py` - Vietnamese question augmentation
+1. `text_aug_usage.py` - Vietnamese question augmentation
 2. Dataset integration examples
 
 **Combined Usage:**
@@ -440,8 +440,8 @@ Run examples:
 
 ```bash
 cd examples
-python image_augmentation_usage.py
-python text_augmentation_usage.py
+python image_aug_usage.py
+python text_aug_usage.py
 ```
 
 ## Research Background
@@ -493,8 +493,8 @@ This implementation is inspired by multiple research works:
 ## Related Documentation
 
 - [docs/RULE_BASED_AUGMENTATION.md](../docs/RULE_BASED_AUGMENTATION.md) - Detailed Vietnamese text augmentation guide
-- [examples/image_augmentation_usage.py](../examples/image_augmentation_usage.py) - Visual augmentation examples
-- [examples/text_augmentation_usage.py](../examples/text_augmentation_usage.py) - Textual augmentation examples
+- [examples/image_aug_usage.py](../examples/image_aug_usage.py) - Visual augmentation examples
+- [examples/text_aug_usage.py](../examples/text_aug_usage.py) - Textual augmentation examples
 - [training/README.md](../training/README.md) - Training pipeline integration
 
 ## Citation
