@@ -33,6 +33,7 @@ from augmentation import (
     CurriculumScheduler,
 )
 from utils import compute_metrics, seed_everything
+from utils.visualization import create_sample_observer
 import logging
 
 logger = logging.getLogger(__name__)
@@ -287,6 +288,16 @@ class VQATrainingPipeline:
         curriculum_scheduler = self.create_curriculum_scheduler()
         augmentation_factory = self.create_augmentation_factory()
         
+        # Create sample observer if enabled
+        sample_observer = None
+        if self.config.training.enable_sample_observation:
+            observation_dir = self.config.training.get_observation_dir(self.config.data.dataset_name)
+            sample_observer = create_sample_observer(
+                save_dir=str(observation_dir),
+                num_samples=self.config.training.num_observation_samples
+            )
+            logger.info(f"Sample observation enabled: {observation_dir}")
+        
         early_stopping = EarlyStoppingCallback(self.config.training.patience)
         
         trainer = VQATrainer(
@@ -298,6 +309,8 @@ class VQATrainingPipeline:
             callbacks=[early_stopping],
             curriculum_scheduler=curriculum_scheduler,
             augmentation_factory=augmentation_factory,
+            sample_observer=sample_observer,
+            num_observation_samples=self.config.training.num_observation_samples,
         )
         
         return trainer

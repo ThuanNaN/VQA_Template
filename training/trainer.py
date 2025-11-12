@@ -5,9 +5,12 @@ This module extends HuggingFace's Trainer to integrate curriculum learning
 and dynamic augmentation strategies.
 """
 
-from typing import Optional, Dict, Any, Callable
+from typing import Optional, Dict, Any, Callable, List
 from transformers import Trainer, TrainerCallback
 from augmentation import CurriculumScheduler
+from utils.visualization import SampleObserver
+from PIL import Image
+import torch
 import logging
 
 logger = logging.getLogger(__name__)
@@ -80,6 +83,136 @@ class CurriculumLearningCallback(TrainerCallback):
                     self.val_dataset.set_text_augmentation(None)
 
 
+class SampleObservationCallback(TrainerCallback):
+    """
+    Callback for saving sample observations during training.
+    
+    At the end of each epoch, this callback:
+    - Extracts sample data from the training set
+    - Captures both original and augmented versions
+    - Gets model predictions
+    - Saves everything in an organized format
+    
+    Args:
+        sample_observer: SampleObserver instance for saving data
+        train_dataset: Training dataset
+        num_samples: Number of samples to observe per epoch
+    """
+    
+    def __init__(
+        self,
+        sample_observer: SampleObserver,
+        train_dataset: Any,
+        num_samples: int = 5
+    ):
+        self.sample_observer = sample_observer
+        self.train_dataset = train_dataset
+        self.num_samples = num_samples
+        self.label_decoder = None
+        
+        # Create reverse mapping from label encoder
+        if hasattr(train_dataset, 'label_encoder'):
+            self.label_decoder = {v: k for k, v in train_dataset.label_encoder.items()}
+    
+    def on_epoch_end(self, args, state, control, model, **kwargs):
+        """Save sample observations at the end of each epoch."""
+        epoch = int(state.epoch) if state.epoch is not None else 0
+        
+        logger.info(f"Collecting sample observations for epoch {epoch}...")
+        
+        # Set model to eval mode
+        model.eval()
+        
+        # Collect samples
+        samples = []
+        indices = torch.randperm(len(self.train_dataset))[:self.num_samples].tolist()
+        
+        with torch.no_grad():
+            for idx in indices:
+                try:
+                    sample = self._collect_sample(idx, model, args.device)
+                    samples.append(sample)
+                except Exception as e:
+                    logger.warning(f"Failed to collect sample {idx}: {e}")
+                    continue
+        
+        # Save samples
+        if samples and self.label_decoder:
+            self.sample_observer.save_epoch_samples(
+                epoch=epoch,
+                samples=samples,
+                label_decoder=self.label_decoder
+            )
+        
+        # Set model back to train mode
+        model.train()
+    
+    def _collect_sample(self, idx: int, model, device) -> Dict[str, Any]:
+        """
+        Collect a single sample with original and augmented versions.
+        
+        Args:
+            idx: Sample index in dataset
+            model: The VQA model
+            device: Device to run inference on
+            
+        Returns:
+            Dictionary containing sample data
+        """
+        # Get original data (temporarily disable augmentation)
+        original_img_aug = self.train_dataset.image_augmentation
+        original_text_aug = self.train_dataset.text_augmentation
+        
+        # Get original version
+        self.train_dataset.set_image_augmentation(None)
+        self.train_dataset.set_text_augmentation(None)
+        
+        # Load original image
+        img_path = self.train_dataset.data['img_paths'][idx]
+        original_image = Image.open(img_path).convert('RGB')
+        original_question = self.train_dataset.data['questions'][idx]
+        
+        # Get original processed data
+        original_data = self.train_dataset[idx]
+        
+        # Restore augmentation and get augmented version
+        self.train_dataset.set_image_augmentation(original_img_aug)
+        self.train_dataset.set_text_augmentation(original_text_aug)
+        
+        augmented_data = self.train_dataset[idx]
+        
+        # Get augmented versions if augmentation is enabled
+        augmented_image = None
+        augmented_question = None
+        
+        if original_img_aug is not None:
+            augmented_image = original_img_aug(original_image)
+        
+        if original_text_aug is not None:
+            augmented_question = original_text_aug(original_question)
+        
+        # Get model prediction on augmented data
+        batch = {
+            'image': augmented_data['image'].unsqueeze(0).to(device),
+            'question_input_ids': augmented_data['question_input_ids'].unsqueeze(0).to(device),
+            'question_attention_mask': augmented_data['question_attention_mask'].unsqueeze(0).to(device),
+        }
+        
+        outputs = model(**batch)
+        prediction = outputs.logits.argmax(dim=-1).item()
+        ground_truth = augmented_data['label'].item()
+        
+        return {
+            'original_image': original_image,
+            'augmented_image': augmented_image,
+            'original_question': original_question,
+            'augmented_question': augmented_question,
+            'prediction': prediction,
+            'ground_truth': ground_truth,
+            'img_path': img_path
+        }
+
+
 class VQATrainer(Trainer):
     """
     Custom Trainer for VQA with Curriculum Learning support.
@@ -87,11 +220,14 @@ class VQATrainer(Trainer):
     Extends HuggingFace Trainer with additional features:
     - Curriculum learning integration
     - Dynamic augmentation updates
+    - Sample observation logging
     - VQA-specific logging and metrics
     
     Args:
         curriculum_scheduler: Optional CurriculumScheduler for curriculum learning
         augmentation_factory: Function that creates augmentation given difficulty value (0.0-1.0)
+        sample_observer: Optional SampleObserver for saving sample observations
+        num_observation_samples: Number of samples to observe per epoch
         *args, **kwargs: Arguments passed to base Trainer
     """
     
@@ -99,6 +235,8 @@ class VQATrainer(Trainer):
         self,
         curriculum_scheduler: Optional[CurriculumScheduler] = None,
         augmentation_factory: Optional[Callable[[float], Any]] = None,
+        sample_observer: Optional[SampleObserver] = None,
+        num_observation_samples: int = 5,
         *args,
         **kwargs
     ):
@@ -106,10 +244,16 @@ class VQATrainer(Trainer):
         
         self.curriculum_scheduler = curriculum_scheduler
         self.augmentation_factory = augmentation_factory
+        self.sample_observer = sample_observer
+        self.num_observation_samples = num_observation_samples
         
         # Add curriculum learning callback if provided
         if curriculum_scheduler is not None and augmentation_factory is not None:
             self._setup_curriculum_learning()
+        
+        # Add sample observation callback if provided
+        if sample_observer is not None:
+            self._setup_sample_observation()
     
     def _setup_curriculum_learning(self):
         """Set up curriculum learning callback."""
@@ -123,6 +267,18 @@ class VQATrainer(Trainer):
         self.add_callback(curriculum_callback)
         logger.info("Curriculum Learning enabled")
         logger.info(f"Schedule: {self.curriculum_scheduler.get_schedule_info()}")
+    
+    def _setup_sample_observation(self):
+        """Set up sample observation callback."""
+        observation_callback = SampleObservationCallback(
+            sample_observer=self.sample_observer,
+            train_dataset=self.train_dataset,
+            num_samples=self.num_observation_samples
+        )
+        
+        self.add_callback(observation_callback)
+        logger.info(f"Sample Observation enabled: {self.num_observation_samples} samples per epoch")
+
     
     def log(self, logs: Dict[str, float], start_time: float = None) -> None:
         """

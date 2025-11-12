@@ -212,6 +212,25 @@ def parse_args():
         help='Name of the run (default: %(default)s)'
     )
     
+    # Sample observation arguments
+    parser.add_argument(
+        '--enable_sample_observation',
+        action='store_true',
+        help='Enable saving sample observations during training'
+    )
+    parser.add_argument(
+        '--observation_dir',
+        type=str,
+        default='observations',
+        help='Directory to save sample observations (default: %(default)s)'
+    )
+    parser.add_argument(
+        '--num_observation_samples',
+        type=int,
+        default=5,
+        help='Number of samples to save per epoch (default: %(default)s)'
+    )
+    
     # System arguments
     parser.add_argument(
         '--n_threads',
@@ -237,6 +256,7 @@ def main():
     logger.info(f"  Image Augmentation: {config.augmentation.enable_image_augmentation} ({config.augmentation.image_augmentation_type})")
     logger.info(f"  Text Augmentation: {config.augmentation.enable_text_augmentation} ({config.augmentation.text_augmentation_type})")
     logger.info(f"  Curriculum: {config.augmentation.enable_curriculum}")
+    logger.info(f"  Sample Observation: {config.training.enable_sample_observation} ({config.training.num_observation_samples} samples/epoch)")
     logger.info(f"  Epochs: {config.training.epochs}")
     logger.info(f"  Batch size: {config.data.batch_size}")
     logger.info(f"  Learning rate: {config.training.learning_rate}")

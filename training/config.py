@@ -140,6 +140,11 @@ class TrainingConfig:
     output_dir: str = 'runs'
     run_name: str = 'run'
     
+    # Sample observation
+    enable_sample_observation: bool = True
+    observation_dir: str = 'observations'
+    num_observation_samples: int = 5
+    
     # Weights & Biases
     report_to_wandb: bool = False
     wandb_project: str = 'VQA-Template'
@@ -151,6 +156,11 @@ class TrainingConfig:
         """Get HuggingFace save directory."""
         run_name = f"{dataset_name}-{self.run_name}-{self.seed}"
         return Path(self.output_dir) / run_name
+    
+    def get_observation_dir(self, dataset_name: str) -> Path:
+        """Get observation save directory."""
+        run_name = f"{dataset_name}-{self.run_name}-{self.seed}"
+        return Path(self.observation_dir) / run_name
 
 
 @dataclass
@@ -211,6 +221,9 @@ class ExperimentConfig:
             logging_steps=args.logging_steps,
             output_dir=args.output_dir,
             run_name=args.run_name,
+            enable_sample_observation=getattr(args, 'enable_sample_observation', False),
+            observation_dir=getattr(args, 'observation_dir', 'observations'),
+            num_observation_samples=getattr(args, 'num_observation_samples', 5),
             report_to_wandb=args.report_to_wandb,
             wandb_project=getattr(args, 'wandb_name', 'VQA-Template'),
             n_threads=args.n_threads,
