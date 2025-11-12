@@ -32,6 +32,7 @@ PATIENCE=5
 FP16_FLAG="--fp16"
 LOGGING_STEPS=50
 DATALOADER_WORKERS=4
+SAMPLE_OBSERVATION="--enable_sample_observation"
 
 # Augmentation Methods
 IMAGE_AUGMENT_METHOD="masked"  # Options: masked, none
@@ -110,6 +111,7 @@ run_experiment() {
         --patience $PATIENCE \
         --logging_steps $LOGGING_STEPS \
         --dataloader_workers $DATALOADER_WORKERS \
+        $SAMPLE_OBSERVATION \
         $FP16_FLAG \
         --output_dir $OUTPUT_DIR \
         --run_name $exp_name"
