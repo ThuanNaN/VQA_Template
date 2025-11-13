@@ -1,4 +1,3 @@
-from .rule_base import (
-    VietnameseVQAAugmentation, 
-    create_augmented_dataset
-)
+from .rule_based import RuleBasedTextAugmentation
+
+__all__ = ['RuleBasedTextAugmentation']

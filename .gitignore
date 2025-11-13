@@ -180,4 +180,5 @@ data/vitextvqa/
 *.tsv
 test.ipynb
 runs/
+observations/
 wandb/

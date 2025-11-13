@@ -9,27 +9,13 @@ Curriculum Learning (CL) to guide model learning from easy to hard samples.
 The framework provides flexible difficulty levels for progressive training.
 """
 
-import random
 import numpy as np
 from PIL import Image, ImageFilter, ImageEnhance
-from typing import Tuple, Optional, Union, List
-from enum import Enum
+from typing import Optional, Union
+from ..base import BaseImageAugmentation
 
 
-class DifficultyLevel(Enum):
-    """
-    Difficulty levels for curriculum learning.
-    
-    EASY: Minimal augmentation - slight color/brightness changes
-    MEDIUM: Moderate augmentation - partial masking, blur, distortion
-    HARD: Aggressive augmentation - heavy masking, strong transformations
-    """
-    EASY = "easy"
-    MEDIUM = "medium"
-    HARD = "hard"
-
-
-class MaskedImageAugmentation:
+class MaskedImageAugmentation(BaseImageAugmentation):
     """
     Image augmentation framework with Curriculum Learning support.
     
@@ -53,23 +39,14 @@ class MaskedImageAugmentation:
     
     def __init__(
         self,
-        difficulty: Union[DifficultyLevel, str] = DifficultyLevel.EASY,
+        difficulty: Union[int, float] = 0.0,
         patch_size: int = 16,
         mask_ratio: Optional[float] = None,
         seed: Optional[int] = None
     ):
         """Initialize the augmentation framework."""
-        if isinstance(difficulty, str):
-            difficulty = DifficultyLevel(difficulty.lower())
-        
-        self.difficulty = difficulty
         self.patch_size = patch_size
-        self.seed = seed
-        
-        # Set default mask ratio based on difficulty if not provided
-        if mask_ratio is None:
-            mask_ratio = self._get_default_mask_ratio()
-        self.mask_ratio = mask_ratio
+        self._mask_ratio = mask_ratio
         
         # Create random number generator for reproducibility
         if seed is not None:
@@ -78,46 +55,47 @@ class MaskedImageAugmentation:
         else:
             self.rng = np.random.RandomState()
         
-        # Configure augmentation parameters based on difficulty
-        self._configure_parameters()
+        # Call parent constructor which will call _configure_parameters
+        super().__init__(difficulty=difficulty, seed=seed)
     
     def _get_default_mask_ratio(self) -> float:
-        """Get default mask ratio based on difficulty level."""
-        if self.difficulty == DifficultyLevel.EASY:
-            return 0.15  # 15% masking for easy samples
-        elif self.difficulty == DifficultyLevel.MEDIUM:
-            return 0.50  # 50% masking for medium samples
-        else:  # HARD
-            return 0.75  # 75% masking for hard samples (MAE paper uses 75%)
+        """Get default mask ratio based on difficulty level (0.0-1.0)."""
+        # Smooth interpolation: 5% to 50% masking
+        min_ratio = 0.05
+        max_ratio = 0.50
+        return min_ratio + self.difficulty * (max_ratio - min_ratio)
     
     def _configure_parameters(self):
-        """Configure augmentation parameters based on difficulty level."""
-        if self.difficulty == DifficultyLevel.EASY:
-            # Easy: Minimal transformations
-            self.color_jitter_strength = 0.1
-            self.brightness_factor = (0.9, 1.1)
-            self.contrast_factor = (0.9, 1.1)
-            self.blur_radius = (0.1, 0.3)
-            self.apply_flip = False
-            self.crop_scale = (0.95, 1.0)
-            
-        elif self.difficulty == DifficultyLevel.MEDIUM:
-            # Medium: Moderate transformations
-            self.color_jitter_strength = 0.3
-            self.brightness_factor = (0.7, 1.3)
-            self.contrast_factor = (0.7, 1.3)
-            self.blur_radius = (0.5, 1.5)
-            self.apply_flip = True
-            self.crop_scale = (0.8, 1.0)
-            
-        else:  # HARD
-            # Hard: Aggressive transformations
-            self.color_jitter_strength = 0.5
-            self.brightness_factor = (0.5, 1.5)
-            self.contrast_factor = (0.5, 1.5)
-            self.blur_radius = (1.0, 3.0)
-            self.apply_flip = True
-            self.crop_scale = (0.7, 1.0)
+        """Configure augmentation parameters based on difficulty level (0.0-1.0)."""
+        # Set default mask ratio based on difficulty if not provided
+        if self._mask_ratio is None:
+            self.mask_ratio = self._get_default_mask_ratio()
+        else:
+            self.mask_ratio = self._mask_ratio
+        
+        # Smooth interpolation for all parameters based on difficulty (0.0-1.0)
+        # Color jitter: 0.0 to 0.5
+        self.color_jitter_strength = self.difficulty * 0.5
+        
+        # Brightness: (1.0, 1.0) to (0.5, 1.5)
+        brightness_range = self.difficulty * 0.5
+        self.brightness_factor = (1.0 - brightness_range, 1.0 + brightness_range)
+        
+        # Contrast: (1.0, 1.0) to (0.5, 1.5)
+        contrast_range = self.difficulty * 0.5
+        self.contrast_factor = (1.0 - contrast_range, 1.0 + contrast_range)
+        
+        # Blur radius: 0.0 to 3.0
+        min_blur, max_blur = 0.0, 3.0
+        blur_range = self.difficulty * max_blur
+        self.blur_radius = (min_blur, blur_range)
+        
+        # Apply flip if difficulty > 0.3
+        self.apply_flip = self.difficulty > 0.3
+        
+        # Crop scale: 1.0 to 0.7 (inverse relationship)
+        min_scale = 0.7
+        self.crop_scale = (min_scale + (1.0 - self.difficulty) * (1.0 - min_scale), 1.0)
     
     def augment(
         self, 
@@ -313,7 +291,7 @@ class MaskedImageAugmentation:
             Dictionary with augmentation parameters
         """
         return {
-            "difficulty": self.difficulty.value,
+            "difficulty": self.difficulty,
             "patch_size": self.patch_size,
             "mask_ratio": self.mask_ratio,
             "color_jitter_strength": self.color_jitter_strength,
@@ -323,112 +301,3 @@ class MaskedImageAugmentation:
             "apply_flip": self.apply_flip,
             "crop_scale": self.crop_scale,
         }
-
-
-class CurriculumLearningScheduler:
-    """
-    Scheduler for curriculum learning progression.
-    
-    Manages the transition from easy to hard samples during training,
-    following a curriculum learning approach.
-    
-    Args:
-        total_epochs: Total number of training epochs
-        easy_epochs: Number of epochs to train on easy samples
-        medium_epochs: Number of epochs to train on medium samples
-        hard_epochs: Number of epochs to train on hard samples (remaining epochs)
-    """
-    
-    def __init__(
-        self,
-        total_epochs: int,
-        easy_epochs: Optional[int] = None,
-        medium_epochs: Optional[int] = None,
-        hard_epochs: Optional[int] = None
-    ):
-        """Initialize the curriculum scheduler."""
-        self.total_epochs = total_epochs
-        
-        # Default split: 30% easy, 30% medium, 40% hard
-        if easy_epochs is None:
-            easy_epochs = int(total_epochs * 0.3)
-        if medium_epochs is None:
-            medium_epochs = int(total_epochs * 0.3)
-        if hard_epochs is None:
-            hard_epochs = total_epochs - easy_epochs - medium_epochs
-        
-        self.easy_epochs = easy_epochs
-        self.medium_epochs = medium_epochs
-        self.hard_epochs = hard_epochs
-        
-        # Validate
-        if easy_epochs + medium_epochs + hard_epochs != total_epochs:
-            raise ValueError(
-                f"Sum of easy ({easy_epochs}), medium ({medium_epochs}), "
-                f"and hard ({hard_epochs}) epochs must equal total_epochs ({total_epochs})"
-            )
-    
-    def get_difficulty_for_epoch(self, epoch: int) -> DifficultyLevel:
-        """
-        Get the difficulty level for a given epoch.
-        
-        Args:
-            epoch: Current epoch number (0-indexed)
-            
-        Returns:
-            DifficultyLevel for the current epoch
-        """
-        if epoch < self.easy_epochs:
-            return DifficultyLevel.EASY
-        elif epoch < self.easy_epochs + self.medium_epochs:
-            return DifficultyLevel.MEDIUM
-        else:
-            return DifficultyLevel.HARD
-    
-    def get_schedule_info(self) -> dict:
-        """
-        Get information about the curriculum schedule.
-        
-        Returns:
-            Dictionary with schedule information
-        """
-        return {
-            "total_epochs": self.total_epochs,
-            "easy_epochs": self.easy_epochs,
-            "medium_epochs": self.medium_epochs,
-            "hard_epochs": self.hard_epochs,
-            "schedule": [
-                f"Epochs 0-{self.easy_epochs-1}: EASY",
-                f"Epochs {self.easy_epochs}-{self.easy_epochs+self.medium_epochs-1}: MEDIUM",
-                f"Epochs {self.easy_epochs+self.medium_epochs}-{self.total_epochs-1}: HARD",
-            ]
-        }
-
-
-def create_augmentor_for_epoch(
-    epoch: int,
-    scheduler: CurriculumLearningScheduler,
-    patch_size: int = 16,
-    seed: Optional[int] = None
-) -> MaskedImageAugmentation:
-    """
-    Create an image augmentor configured for the current epoch.
-    
-    Convenience function to create an augmentor with the appropriate
-    difficulty level based on the curriculum learning schedule.
-    
-    Args:
-        epoch: Current epoch number
-        scheduler: CurriculumLearningScheduler instance
-        patch_size: Size of patches for masking
-        seed: Random seed for reproducibility
-        
-    Returns:
-        MaskedImageAugmentation instance configured for the epoch
-    """
-    difficulty = scheduler.get_difficulty_for_epoch(epoch)
-    return MaskedImageAugmentation(
-        difficulty=difficulty,
-        patch_size=patch_size,
-        seed=seed
-    )

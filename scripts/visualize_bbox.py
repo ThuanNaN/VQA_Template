@@ -1,19 +1,24 @@
+"""Visualize the bounding boxes of detected objects using Gradio interface."""
+import os
+import sys
+sys.path.append('..')
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from PIL import Image
-import os
 import gradio as gr
 from utils.dataset_utils import load_obj_tsv
 import time
 
+print("Starting Object Detection Visualization Interface...")
+
 # Load class vocabularies
-with open("./data/1600-400-20/objects_vocab.txt", "r") as f:
+with open("../data/1600-400-20/objects_vocab.txt", "r") as f:
     obj_classes = f.read().split("\n")[:-1]
 obj_id2class = {i: obj_classes[i] for i in range(len(obj_classes))}
 
-with open("./data/1600-400-20/attributes_vocab.txt", "r") as f:
+with open("../data/1600-400-20/attributes_vocab.txt", "r") as f:
     attr_classes = f.read().split("\n")[:-1]
 attr_id2class = {i: attr_classes[i] for i in range(len(attr_classes))}
 
@@ -33,7 +38,7 @@ def find_tsv_file_paths():
     tsv_file_paths = {}
     
     # Recursively search for the TSV files in data directory
-    for root, dirs, files in os.walk("./data"):
+    for root, dirs, files in os.walk("../data"):
         for tsv_filename in IMG_DIR.keys():
             if tsv_filename in files:
                 tsv_file_paths[tsv_filename] = os.path.join(root, tsv_filename)
