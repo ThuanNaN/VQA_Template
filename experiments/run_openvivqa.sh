@@ -171,7 +171,7 @@ run_experiment \
 
 run_experiment \
     "exp2_text_augment" \
-    "Training with text augmentation only ($TEXT_AUGMENT_METHOD)" \
+    "Training with text augmentation only $TEXT_AUGMENT_METHOD" \
     "--enable_text_augmentation" \
     "--text_augmentation_type $TEXT_AUGMENT_METHOD"
 
@@ -181,7 +181,7 @@ run_experiment \
 
 run_experiment \
     "exp3_image_augment" \
-    "Training with image augmentation ($IMAGE_AUGMENT_METHOD) only" \
+    "Training with image augmentation $IMAGE_AUGMENT_METHOD only" \
     "--enable_image_augmentation" \
     "--image_augmentation_type $IMAGE_AUGMENT_METHOD" \
     "--patch_size 16"
@@ -192,7 +192,7 @@ run_experiment \
 
 run_experiment \
     "exp4_text_image_augment" \
-    "Training with both text ($TEXT_AUGMENT_METHOD) and image ($IMAGE_AUGMENT_METHOD) augmentation" \
+    "Training with both text $TEXT_AUGMENT_METHOD and image $IMAGE_AUGMENT_METHOD augmentation" \
     "--enable_text_augmentation" \
     "--text_augmentation_type $TEXT_AUGMENT_METHOD" \
     "--enable_image_augmentation" \
@@ -205,7 +205,7 @@ run_experiment \
 
 run_experiment \
     "exp5_text_augment_cl" \
-    "Training with text augmentation ($TEXT_AUGMENT_METHOD) and curriculum learning" \
+    "Training with text augmentation $TEXT_AUGMENT_METHOD and curriculum learning" \
     "--enable_text_augmentation" \
     "--text_augmentation_type $TEXT_AUGMENT_METHOD" \
     "--enable_curriculum" \
@@ -219,7 +219,7 @@ run_experiment \
 
 run_experiment \
     "exp6_image_augment_cl" \
-    "Training with image augmentation ($IMAGE_AUGMENT_METHOD) and curriculum learning" \
+    "Training with image augmentation $IMAGE_AUGMENT_METHOD and curriculum learning" \
     "--enable_image_augmentation" \
     "--image_augmentation_type $IMAGE_AUGMENT_METHOD" \
     "--patch_size 16" \
@@ -234,7 +234,7 @@ run_experiment \
 
 run_experiment \
     "exp7_full_augment_cl" \
-    "Training with text ($TEXT_AUGMENT_METHOD) + image ($IMAGE_AUGMENT_METHOD) augmentation and curriculum learning" \
+    "Training with text $TEXT_AUGMENT_METHOD + image $IMAGE_AUGMENT_METHOD augmentation and curriculum learning" \
     "--enable_text_augmentation" \
     "--text_augmentation_type $TEXT_AUGMENT_METHOD" \
     "--enable_image_augmentation" \
