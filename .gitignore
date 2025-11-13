@@ -172,6 +172,7 @@ cython_debug/
 
 data/MSCOCO/
 data/openvivqa/
+data/evjvqa/
 data/vivqa/
 data/vivqax/
 data/viocrvqa/
