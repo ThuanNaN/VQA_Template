@@ -20,6 +20,12 @@ A comprehensive Vietnamese Visual Question Answering (VQA) dataset template and 
 
 - Git LFS - [Installation-Linux](https://github.com/git-lfs/git-lfs/blob/main/INSTALLING.md)
 - Python 3.12.9
+- Setup .env file with HuggingFace credentials:
+
+```bash
+cp .env.example .env
+# Edit .env and set HF_USER and HF_TOKEN
+```
 
 ### Installation
 
@@ -41,21 +47,6 @@ python download.py
 ```
 
 ### Generate COCO Images for ViVQA
-
-```bash
-cd scripts
-python create_vivqa_image.py
-```
-
-Download dataset
-
-```bash
-cd data
-python download.py
-# Enter the dataset index to download (eg. 1,2,3 to download MSCOCO, ViVQA and OpenViVQA dataset)
-```
-
-Generate COCO images for `vivqa` dataset
 
 ```bash
 cd scripts
