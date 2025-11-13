@@ -17,7 +17,7 @@
 ################################################################################
 
 # Configuration
-DATASET_NAME="vivqa"
+DATASET_NAME="openvivqa"
 VIS_MODEL="google/vit-base-patch16-224"
 TEXT_MODEL="vinai/bartpho-syllable-base"
 SEED=42
@@ -45,10 +45,10 @@ HARD_EPOCHS=12
 
 # WandB Configuration (set to true to enable)
 ENABLE_WANDB=true
-WANDB_PROJECT="VQA-ViVQA"
+WANDB_PROJECT="VQA-OpenViVQA"
 
 # Output directory
-OUTPUT_DIR="runs/vivqa_augmentation"
+OUTPUT_DIR="runs/openvivqa_augmentation"
 
 # Color codes for output
 RED='\033[0;31m'
