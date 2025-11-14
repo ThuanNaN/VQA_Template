@@ -33,7 +33,7 @@ from augmentation import (
     CurriculumScheduler,
 )
 from utils import compute_metrics, seed_everything
-from utils.visualization import create_sample_observer
+from utils.visualization import create_sample_observer, create_wrong_prediction_tracker
 import logging
 
 logger = logging.getLogger(__name__)
@@ -298,6 +298,15 @@ class VQATrainingPipeline:
             )
             logger.info(f"Sample observation enabled: {observation_dir}")
         
+        # Create wrong prediction tracker if enabled
+        wrong_prediction_tracker = None
+        if self.config.training.enable_wrong_prediction_tracking:
+            wrong_pred_dir = self.config.training.get_wrong_prediction_dir(self.config.data.dataset_name)
+            wrong_prediction_tracker = create_wrong_prediction_tracker(
+                save_dir=str(wrong_pred_dir)
+            )
+            logger.info(f"Wrong prediction tracking enabled: {wrong_pred_dir}")
+        
         early_stopping = EarlyStoppingCallback(self.config.training.patience)
         
         trainer = VQATrainer(
@@ -311,6 +320,7 @@ class VQATrainingPipeline:
             augmentation_factory=augmentation_factory,
             sample_observer=sample_observer,
             num_observation_samples=self.config.training.num_observation_samples,
+            wrong_prediction_tracker=wrong_prediction_tracker,
         )
         
         return trainer

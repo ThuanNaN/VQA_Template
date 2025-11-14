@@ -145,6 +145,10 @@ class TrainingConfig:
     observation_dir: str = 'observations'
     num_observation_samples: int = 5
     
+    # Wrong prediction tracking
+    enable_wrong_prediction_tracking: bool = True
+    wrong_prediction_dir: str = 'wrong_predictions'
+    
     # Weights & Biases
     report_to_wandb: bool = False
     wandb_project: str = 'VQA-Template'
@@ -161,6 +165,11 @@ class TrainingConfig:
         """Get observation save directory."""
         run_name = f"{dataset_name}-{self.run_name}-{self.seed}"
         return Path(self.observation_dir) / run_name
+    
+    def get_wrong_prediction_dir(self, dataset_name: str) -> Path:
+        """Get wrong prediction save directory."""
+        run_name = f"{dataset_name}-{self.run_name}-{self.seed}"
+        return Path(self.wrong_prediction_dir) / run_name
 
 
 @dataclass
@@ -224,6 +233,8 @@ class ExperimentConfig:
             enable_sample_observation=getattr(args, 'enable_sample_observation', False),
             observation_dir=getattr(args, 'observation_dir', 'observations'),
             num_observation_samples=getattr(args, 'num_observation_samples', 5),
+            enable_wrong_prediction_tracking=getattr(args, 'enable_wrong_prediction_tracking', True),
+            wrong_prediction_dir=getattr(args, 'wrong_prediction_dir', 'wrong_predictions'),
             report_to_wandb=args.report_to_wandb,
             wandb_project=getattr(args, 'wandb_name', 'VQA-Template'),
             n_threads=args.n_threads,

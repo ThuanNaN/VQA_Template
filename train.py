@@ -231,6 +231,26 @@ def parse_args():
         help='Number of samples to save per epoch (default: %(default)s)'
     )
     
+    # Wrong prediction tracking arguments
+    parser.add_argument(
+        '--enable_wrong_prediction_tracking',
+        action='store_true',
+        default=True,
+        help='Enable tracking wrong predictions during validation (default: True)'
+    )
+    parser.add_argument(
+        '--disable_wrong_prediction_tracking',
+        action='store_false',
+        dest='enable_wrong_prediction_tracking',
+        help='Disable wrong prediction tracking'
+    )
+    parser.add_argument(
+        '--wrong_prediction_dir',
+        type=str,
+        default='wrong_predictions',
+        help='Directory to save wrong predictions (default: %(default)s)'
+    )
+    
     # System arguments
     parser.add_argument(
         '--n_threads',
@@ -257,6 +277,7 @@ def main():
     logger.info(f"  Text Augmentation: {config.augmentation.enable_text_augmentation} ({config.augmentation.text_augmentation_type})")
     logger.info(f"  Curriculum: {config.augmentation.enable_curriculum}")
     logger.info(f"  Sample Observation: {config.training.enable_sample_observation} ({config.training.num_observation_samples} samples/epoch)")
+    logger.info(f"  Wrong Prediction Tracking: {config.training.enable_wrong_prediction_tracking}")
     logger.info(f"  Epochs: {config.training.epochs}")
     logger.info(f"  Batch size: {config.data.batch_size}")
     logger.info(f"  Learning rate: {config.training.learning_rate}")
