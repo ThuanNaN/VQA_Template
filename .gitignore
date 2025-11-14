@@ -182,4 +182,5 @@ data/vitextvqa/
 test.ipynb
 runs/
 observations/
+wrong_predictions/
 wandb/

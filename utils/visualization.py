@@ -234,3 +234,138 @@ def create_sample_observer(save_dir: str, num_samples: int = 5) -> SampleObserve
         SampleObserver instance
     """
     return SampleObserver(save_dir, num_samples)
+
+
+class WrongPredictionTracker:
+    """
+    Tracks all incorrectly predicted samples during validation/evaluation.
+    
+    This tracker helps monitor which samples the model struggles with
+    and provides detailed information about prediction errors.
+    """
+    
+    def __init__(self, save_dir: str):
+        """
+        Initialize the wrong prediction tracker.
+        
+        Args:
+            save_dir: Directory to save wrong predictions
+        """
+        self.save_dir = Path(save_dir)
+        self.save_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"WrongPredictionTracker initialized: saving to {save_dir}")
+    
+    def save_wrong_predictions(
+        self,
+        epoch: int,
+        wrong_samples: List[Dict[str, Any]],
+        label_decoder: Dict[int, str]
+    ):
+        """
+        Save all wrong predictions for an epoch.
+        
+        Args:
+            epoch: Current epoch number
+            wrong_samples: List of wrong prediction dictionaries containing:
+                - idx: sample index in dataset
+                - image_path: path to image file
+                - question: question text
+                - prediction: int (predicted label index)
+                - ground_truth: int (true label index)
+                - logits: prediction logits (optional)
+            label_decoder: Dictionary mapping label indices to answer strings
+        """
+        epoch_dir = self.save_dir / f"epoch_{epoch:03d}"
+        epoch_dir.mkdir(exist_ok=True)
+        
+        # Save metadata in JSON
+        metadata = []
+        
+        for sample in wrong_samples:
+            # Decode predictions and ground truth
+            pred_answer = label_decoder.get(sample['prediction'], f"unknown_{sample['prediction']}")
+            gt_answer = label_decoder.get(sample['ground_truth'], f"unknown_{sample['ground_truth']}")
+            
+            # Prepare metadata entry
+            sample_meta = {
+                'sample_idx': sample['idx'],
+                'image_path': sample['image_path'],
+                'question': sample['question'],
+                'model_prediction': pred_answer,
+                'ground_truth': gt_answer,
+                'prediction_label': int(sample['prediction']),
+                'ground_truth_label': int(sample['ground_truth']),
+            }
+            
+            # Add logits if available for deeper analysis
+            if 'logits' in sample and sample['logits'] is not None:
+                # Convert logits to list for JSON serialization
+                if isinstance(sample['logits'], torch.Tensor):
+                    logits_list = sample['logits'].cpu().tolist()
+                else:
+                    logits_list = sample['logits']
+                
+                # Get top-5 predictions
+                top5_indices = sorted(range(len(logits_list)), key=lambda i: logits_list[i], reverse=True)[:5]
+                top5_predictions = [
+                    {
+                        'rank': i + 1,
+                        'answer': label_decoder.get(idx, f"unknown_{idx}"),
+                        'label': idx,
+                        'score': float(logits_list[idx])
+                    }
+                    for i, idx in enumerate(top5_indices)
+                ]
+                sample_meta['top5_predictions'] = top5_predictions
+            
+            metadata.append(sample_meta)
+        
+        # Save epoch-level metadata
+        epoch_metadata = {
+            'epoch': epoch,
+            'num_wrong_predictions': len(wrong_samples),
+            'wrong_samples': metadata
+        }
+        
+        with open(epoch_dir / "wrong_predictions.json", 'w', encoding='utf-8') as f:
+            json.dump(epoch_metadata, f, ensure_ascii=False, indent=2)
+        
+        # Create human-readable summary
+        summary_text = f"Epoch {epoch} - Wrong Predictions Summary\n"
+        summary_text += "=" * 80 + "\n\n"
+        summary_text += f"Total wrong predictions: {len(metadata)}\n\n"
+        summary_text += "-" * 80 + "\n"
+        
+        for i, meta in enumerate(metadata, 1):
+            summary_text += f"\n[{i}] Sample Index: {meta['sample_idx']}\n"
+            summary_text += f"Image: {meta['image_path']}\n"
+            summary_text += f"Question: {meta['question']}\n"
+            summary_text += f"Ground Truth: {meta['ground_truth']}\n"
+            summary_text += f"Prediction: {meta['model_prediction']}\n"
+            
+            if 'top5_predictions' in meta:
+                summary_text += f"Top-5 Predictions:\n"
+                for pred in meta['top5_predictions']:
+                    summary_text += f"  {pred['rank']}. {pred['answer']} (score: {pred['score']:.4f})\n"
+            
+            summary_text += "-" * 80 + "\n"
+        
+        with open(epoch_dir / "wrong_predictions_summary.txt", 'w', encoding='utf-8') as f:
+            f.write(summary_text)
+        
+        logger.info(f"Saved {len(metadata)} wrong predictions for epoch {epoch} to {epoch_dir}")
+        
+        return len(metadata)
+
+
+def create_wrong_prediction_tracker(save_dir: str) -> WrongPredictionTracker:
+    """
+    Factory function to create a WrongPredictionTracker.
+    
+    Args:
+        save_dir: Directory to save wrong predictions
+        
+    Returns:
+        WrongPredictionTracker instance
+    """
+    return WrongPredictionTracker(save_dir)

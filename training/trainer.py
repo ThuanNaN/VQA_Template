@@ -8,7 +8,7 @@ and dynamic augmentation strategies.
 from typing import Optional, Dict, Any, Callable, List
 from transformers import Trainer, TrainerCallback
 from augmentation import CurriculumScheduler
-from utils.visualization import SampleObserver
+from utils.visualization import SampleObserver, WrongPredictionTracker
 from PIL import Image
 import torch
 import logging
@@ -213,6 +213,106 @@ class SampleObservationCallback(TrainerCallback):
         }
 
 
+class WrongPredictionCallback(TrainerCallback):
+    """
+    Callback for tracking all wrong predictions during validation.
+    
+    At the end of each validation epoch, this callback:
+    - Collects all samples that were incorrectly predicted
+    - Saves detailed metadata including images, questions, predictions, and ground truth
+    - Creates summary reports for analysis
+    
+    Args:
+        wrong_prediction_tracker: WrongPredictionTracker instance for saving data
+        val_dataset: Validation dataset
+    """
+    
+    def __init__(
+        self,
+        wrong_prediction_tracker: WrongPredictionTracker,
+        val_dataset: Any
+    ):
+        self.tracker = wrong_prediction_tracker
+        self.val_dataset = val_dataset
+        self.label_decoder = None
+        
+        # Create reverse mapping from label encoder
+        if hasattr(val_dataset, 'label_encoder'):
+            self.label_decoder = {v: k for k, v in val_dataset.label_encoder.items()}
+    
+    def on_evaluate(self, args, state, control, model, metrics=None, **kwargs):
+        """Track wrong predictions after each evaluation."""
+        if metrics is None or self.label_decoder is None:
+            return
+        
+        epoch = int(state.epoch) if state.epoch is not None else 0
+        
+        logger.info(f"Collecting wrong predictions for epoch {epoch}...")
+        
+        # Set model to eval mode
+        model.eval()
+        
+        # Collect all wrong predictions
+        wrong_samples = []
+        
+        with torch.no_grad():
+            for idx in range(len(self.val_dataset)):
+                try:
+                    sample = self.val_dataset[idx]
+                    
+                    # Create batch
+                    batch = {
+                        'image': sample['image'].unsqueeze(0).to(args.device),
+                        'question_input_ids': sample['question_input_ids'].unsqueeze(0).to(args.device),
+                        'question_attention_mask': sample['question_attention_mask'].unsqueeze(0).to(args.device),
+                    }
+                    
+                    # Get prediction
+                    outputs = model(**batch)
+                    logits = outputs["logits"][0]  # Remove batch dimension
+                    prediction = logits.argmax(dim=-1).item()
+                    ground_truth = sample['label'].item()
+                    
+                    # Track if prediction is wrong
+                    if prediction != ground_truth:
+                        # Get original data
+                        img_path = self.val_dataset.data['img_paths'][idx]
+                        question = self.val_dataset.data['questions'][idx]
+                        
+                        wrong_sample = {
+                            'idx': idx,
+                            'image_path': img_path,
+                            'question': question,
+                            'prediction': prediction,
+                            'ground_truth': ground_truth,
+                            'logits': logits
+                        }
+                        wrong_samples.append(wrong_sample)
+                
+                except Exception as e:
+                    logger.warning(f"Failed to process sample {idx}: {e}")
+                    continue
+        
+        # Save wrong predictions
+        if wrong_samples:
+            num_wrong = self.tracker.save_wrong_predictions(
+                epoch=epoch,
+                wrong_samples=wrong_samples,
+                label_decoder=self.label_decoder
+            )
+            
+            # Calculate error rate
+            total_samples = len(self.val_dataset)
+            error_rate = num_wrong / total_samples if total_samples > 0 else 0.0
+            
+            logger.info(
+                f"Epoch {epoch}: {num_wrong}/{total_samples} wrong predictions "
+                f"(error rate: {error_rate:.2%})"
+            )
+        else:
+            logger.info(f"Epoch {epoch}: No wrong predictions! Perfect accuracy!")
+
+
 class VQATrainer(Trainer):
     """
     Custom Trainer for VQA with Curriculum Learning support.
@@ -221,6 +321,7 @@ class VQATrainer(Trainer):
     - Curriculum learning integration
     - Dynamic augmentation updates
     - Sample observation logging
+    - Wrong prediction tracking
     - VQA-specific logging and metrics
     
     Args:
@@ -228,6 +329,7 @@ class VQATrainer(Trainer):
         augmentation_factory: Function that creates augmentation given difficulty value (0.0-1.0)
         sample_observer: Optional SampleObserver for saving sample observations
         num_observation_samples: Number of samples to observe per epoch
+        wrong_prediction_tracker: Optional WrongPredictionTracker for tracking validation errors
         *args, **kwargs: Arguments passed to base Trainer
     """
     
@@ -237,6 +339,7 @@ class VQATrainer(Trainer):
         augmentation_factory: Optional[Callable[[float], Any]] = None,
         sample_observer: Optional[SampleObserver] = None,
         num_observation_samples: int = 5,
+        wrong_prediction_tracker: Optional[WrongPredictionTracker] = None,
         *args,
         **kwargs
     ):
@@ -246,6 +349,7 @@ class VQATrainer(Trainer):
         self.augmentation_factory = augmentation_factory
         self.sample_observer = sample_observer
         self.num_observation_samples = num_observation_samples
+        self.wrong_prediction_tracker = wrong_prediction_tracker
         
         # Add curriculum learning callback if provided
         if curriculum_scheduler is not None and augmentation_factory is not None:
@@ -254,6 +358,10 @@ class VQATrainer(Trainer):
         # Add sample observation callback if provided
         if sample_observer is not None:
             self._setup_sample_observation()
+        
+        # Add wrong prediction tracking callback if provided
+        if wrong_prediction_tracker is not None:
+            self._setup_wrong_prediction_tracking()
     
     def _setup_curriculum_learning(self):
         """Set up curriculum learning callback."""
@@ -278,6 +386,16 @@ class VQATrainer(Trainer):
         
         self.add_callback(observation_callback)
         logger.info(f"Sample Observation enabled: {self.num_observation_samples} samples per epoch")
+    
+    def _setup_wrong_prediction_tracking(self):
+        """Set up wrong prediction tracking callback."""
+        wrong_pred_callback = WrongPredictionCallback(
+            wrong_prediction_tracker=self.wrong_prediction_tracker,
+            val_dataset=self.eval_dataset
+        )
+        
+        self.add_callback(wrong_pred_callback)
+        logger.info("Wrong Prediction Tracking enabled for validation set")
 
     
     def log(self, logs: Dict[str, float], start_time: float = None) -> None:
