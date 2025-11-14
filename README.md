@@ -65,8 +65,7 @@ python download.py
 - Visulize bbox
 
 ```bash
-cd ./scripts
-python visualize_bbox.py --host 0.0.0.0 --port 7860
+python scripts/visualize_bbox.py
 ```
 
 ## Template Extraction & Hard Sample Mining

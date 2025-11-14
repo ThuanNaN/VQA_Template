@@ -1,7 +1,12 @@
 """Visualize the bounding boxes of detected objects using Gradio interface."""
 import os
 import sys
-sys.path.append('..')
+
+# Add project root to Python path
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+sys.path.insert(0, PROJECT_ROOT)
+
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,21 +18,39 @@ import time
 
 print("Starting Object Detection Visualization Interface...")
 
+# Get the absolute path to the project root directory (already defined above)
+
 # Load class vocabularies
-with open("../data/1600-400-20/objects_vocab.txt", "r") as f:
+vocab_dir = os.path.join(PROJECT_ROOT, "data", "1600-400-20")
+with open(os.path.join(vocab_dir, "objects_vocab.txt"), "r") as f:
     obj_classes = f.read().split("\n")[:-1]
 obj_id2class = {i: obj_classes[i] for i in range(len(obj_classes))}
 
-with open("../data/1600-400-20/attributes_vocab.txt", "r") as f:
+with open(os.path.join(vocab_dir, "attributes_vocab.txt"), "r") as f:
     attr_classes = f.read().split("\n")[:-1]
 attr_id2class = {i: attr_classes[i] for i in range(len(attr_classes))}
 
-# Define the mapping between TSV files and their corresponding image directories
+# Define the mapping between TSV files and their corresponding image directories (absolute paths)
 IMG_DIR = {
-    "vivqa_obj36.tsv": "./data/vivqa/images",
-    "openvivqa_train_obj36.tsv": "./data/openvivqa/training-images",
-    "openvivqa_dev_obj36.tsv": "./data/openvivqa/dev-images",
-    "openvivqa_test_obj36.tsv": "./data/openvivqa/test-images",
+    # ViVQA dataset
+    "vivqa_obj36.tsv": os.path.join(PROJECT_ROOT, "data", "vivqa", "images"),
+
+    # OpenViVQA dataset
+    "openvivqa_train_obj36.tsv": os.path.join(PROJECT_ROOT, "data", "openvivqa", "training-images"),
+    "openvivqa_dev_obj36.tsv": os.path.join(PROJECT_ROOT, "data", "openvivqa", "dev-images"),
+    "openvivqa_test_obj36.tsv": os.path.join(PROJECT_ROOT, "data", "openvivqa", "test-images"),
+
+    # ViTextVQA dataset
+    "vitextvqa_obj36.tsv": os.path.join(PROJECT_ROOT, "data", "vitextvqa", "images"),
+
+    # ViOCRVQA dataset
+    "viocrvqa_obj36.tsv": os.path.join(PROJECT_ROOT, "data", "viocrvqa", "images"),
+
+    # EVJVQA dataset
+    "evjvqa_obj36.tsv": os.path.join(PROJECT_ROOT, "data", "evjvqa", "images"),
+
+    # ViVQA-X dataset
+    # "vivqax_obj36.tsv": os.path.join(PROJECT_ROOT, "data", "vivqax", "images"),
 }
 
 # Cache for loaded TSV data
@@ -38,14 +61,15 @@ def find_tsv_file_paths():
     tsv_file_paths = {}
     
     # Recursively search for the TSV files in data directory
-    for root, dirs, files in os.walk("../data"):
+    data_dir = os.path.join(PROJECT_ROOT, "data")
+    for root, dirs, files in os.walk(data_dir):
         for tsv_filename in IMG_DIR.keys():
             if tsv_filename in files:
                 tsv_file_paths[tsv_filename] = os.path.join(root, tsv_filename)
     
     return tsv_file_paths
 
-def get_image_path(tsv_filepath, img_id):
+def get_image_path(tsv_filepath, img_id, remove_prefix=True):
     """
     Get the image path based on the TSV file and image ID
     
@@ -65,11 +89,17 @@ def get_image_path(tsv_filepath, img_id):
     if img_dir is None:
         return None
     
+    if remove_prefix:
+        # Remove any prefix from img_id if present (e.g., "COCO_val2014_000000123456.jpg" -> "000000123456")
+        img_id = os.path.splitext(os.path.basename(img_id))[0].split('_')[-1]
+    
     # Try different extensions in the image directory
     for ext in ['.jpg', '.jpeg', '.png']:
         img_path = os.path.join(img_dir, f"{img_id}{ext}")
         if os.path.exists(img_path):
             return img_path
+        else:
+            print(f"Image not found: {img_path}")
     
     return None
 
@@ -120,6 +150,11 @@ def visualize_detection(image, detection_data, confidence_threshold=0.0):
             img_width = detection_data.get('img_w', 600)
             img_height = detection_data.get('img_h', 400)
             img = Image.new('RGB', (img_width, img_height), color='white')
+    elif image is None:
+        # Create a blank image if no image is provided
+        img_width = detection_data.get('img_w', 600)
+        img_height = detection_data.get('img_h', 400)
+        img = Image.new('RGB', (img_width, img_height), color='white')
     else:
         img = image
     
