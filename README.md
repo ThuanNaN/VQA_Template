@@ -69,6 +69,16 @@ cd ./scripts
 python visualize_bbox.py --host 0.0.0.0 --port 7860
 ```
 
+## Template Extraction & Hard Sample Mining
+
+Surface under-covered question patterns before training to target augmentation where it matters most:
+
+```bash
+python -m examples.template_extraction_usage
+```
+
+The script loads the ViVQA dataset, extracts reusable question templates, scores sample difficulty (0.0-1.0), and writes `runs/template_analysis/vivqa_hard_samples.json`. Feed that payload into your augmentation jobs to upsample rare templates, rare answers, or long/complex questions.
+
 ## Training
 
 ### Run All Experiments
@@ -89,7 +99,6 @@ cd /home/thuannd/Repository/VQA_Template
 | 5 | Text + CL | ✅ | ❌ | ✅ | `exp5_text_augment_cl` |
 | 6 | Image + CL | ❌ | ✅ | ✅ | `exp6_image_augment_cl` |
 | 7 | Full (⭐ Best) | ✅ | ✅ | ✅ | `exp7_full_augment_cl` |
-
 
 ### Basic Training
 
