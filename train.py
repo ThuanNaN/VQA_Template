@@ -47,6 +47,26 @@ def parse_args():
         choices=['vinai/bartpho-syllable-base', 'vinai/bartpho-syllable', 'FacebookAI/xlm-roberta-base'],
         help='Text model name (default: %(default)s)'
     )
+    parser.add_argument(
+        '--hidden_size',
+        type=int,
+        default=768,
+        help='Hidden size for model (default: %(default)s)'
+    )
+    parser.add_argument(
+        '--text_aggregation',
+        type=str,
+        default='mean',
+        choices=['mean', 'sum', 'max', 'first', 'attention', 'transformer', 'gated', 'weighted'],
+        help='Aggregation strategy for multiple text inputs (default: %(default)s)'
+    )
+    parser.add_argument(
+        '--vis_aggregation',
+        type=str,
+        default='mean',
+        choices=['mean', 'sum', 'max', 'first', 'attention', 'transformer', 'gated', 'weighted'],
+        help='Aggregation strategy for multiple visual inputs (default: %(default)s)'
+    )
     
     # Dataset arguments
     parser.add_argument(

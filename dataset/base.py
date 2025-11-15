@@ -27,28 +27,80 @@ class BaseDataset(Dataset):
         return len(self.data["questions"])
 
     def __getitem__(self, idx):
+        """
+        Get a single sample from the dataset.
+        
+        Supports both single and multiple inputs:
+        - Image augmentation can return single PIL Image or list of PIL Images
+        - Text augmentation can return single string or list of strings
+        
+        Returns:
+            Dict with:
+                - image: [C, H, W] or [num_images, C, H, W]
+                - question_input_ids: [seq_len] or [num_texts, seq_len]
+                - question_attention_mask: [seq_len] or [num_texts, seq_len]
+                - label: scalar tensor
+        """
         img_path = self.data['img_paths'][idx]
         pil_image = Image.open(img_path).convert('RGB')
         
         # Apply image augmentation if provided
+        # Augmentation can return single image or list of images
         if self.image_augmentation is not None:
-            pil_image = self.image_augmentation(pil_image)
-        
-        image = self.vis_processor(pil_image, return_tensors="pt")["pixel_values"].squeeze(0)
+            augmented_result = self.image_augmentation(pil_image)
+            
+            # Handle both single and multiple images
+            if isinstance(augmented_result, list):
+                # Multiple images
+                images = [self.vis_processor(img, return_tensors="pt")["pixel_values"].squeeze(0) 
+                         for img in augmented_result]
+                image = torch.stack(images)  # [num_images, C, H, W]
+            else:
+                # Single image
+                image = self.vis_processor(augmented_result, return_tensors="pt")["pixel_values"].squeeze(0)
+        else:
+            image = self.vis_processor(pil_image, return_tensors="pt")["pixel_values"].squeeze(0)
         
         question_text = self.data['questions'][idx]
         
         # Apply text augmentation if provided
+        # Augmentation can return single text or list of texts (paraphrases)
         if self.text_augmentation is not None:
-            question_text = self.text_augmentation(question_text)
-        
-        question = self.text_processor(question_text, 
-                                       return_tensors="pt", 
-                                       padding="max_length", 
-                                       truncation=True, 
-                                       **self.kwargs)
-        question_input_ids = question["input_ids"].squeeze(0)
-        question_attention_mask = question["attention_mask"].squeeze(0)
+            augmented_text = self.text_augmentation(question_text)
+            
+            # Handle both single and multiple texts
+            if isinstance(augmented_text, list):
+                # Multiple texts (e.g., paraphrases)
+                questions = self.text_processor(
+                    augmented_text,  # List of strings
+                    return_tensors="pt", 
+                    padding="max_length", 
+                    truncation=True, 
+                    **self.kwargs
+                )
+                question_input_ids = questions["input_ids"]  # [num_texts, seq_len]
+                question_attention_mask = questions["attention_mask"]  # [num_texts, seq_len]
+            else:
+                # Single text
+                question = self.text_processor(
+                    augmented_text, 
+                    return_tensors="pt", 
+                    padding="max_length", 
+                    truncation=True, 
+                    **self.kwargs
+                )
+                question_input_ids = question["input_ids"].squeeze(0)  # [seq_len]
+                question_attention_mask = question["attention_mask"].squeeze(0)  # [seq_len]
+        else:
+            question = self.text_processor(
+                question_text, 
+                return_tensors="pt", 
+                padding="max_length", 
+                truncation=True, 
+                **self.kwargs
+            )
+            question_input_ids = question["input_ids"].squeeze(0)
+            question_attention_mask = question["attention_mask"].squeeze(0)
 
         answer = self.data['answers'][idx]
         answer_label = self.label_encoder.get(answer, None)

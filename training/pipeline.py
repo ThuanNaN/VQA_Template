@@ -188,11 +188,18 @@ class VQATrainingPipeline:
         config = SimpleVQAConfig(
             vis_model_name=self.config.model.vis_model_name,
             text_model_name=self.config.model.text_model_name,
-            num_classes=num_classes
+            num_classes=num_classes,
+            hidden_size=self.config.model.hidden_size,
+            text_aggregation=self.config.model.text_aggregation,
+            vis_aggregation=self.config.model.vis_aggregation,
+            text_aggregation_kwargs=self.config.model.text_aggregation_kwargs,
+            vis_aggregation_kwargs=self.config.model.vis_aggregation_kwargs,
         )
         model = SimpleVQA(config)
         
         logger.info(f"Model created with {num_classes} classes")
+        logger.info(f"Text aggregation: {self.config.model.text_aggregation}")
+        logger.info(f"Visual aggregation: {self.config.model.vis_aggregation}")
         return model, config
     
     def create_curriculum_scheduler(self) -> Optional[CurriculumScheduler]:

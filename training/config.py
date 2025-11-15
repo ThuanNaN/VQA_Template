@@ -6,7 +6,7 @@ in a type-safe and organized manner.
 """
 
 from dataclasses import dataclass, field, asdict
-from typing import Optional, List
+from typing import Optional, List, Union, Any
 from pathlib import Path
 
 
@@ -18,6 +18,18 @@ class ModelConfig:
     num_classes: Optional[int] = None
     hidden_size: int = 768
     dropout: float = 0.1
+    
+    # Aggregation strategies for multiple inputs
+    # Simple: 'mean', 'sum', 'max', 'first'
+    # Complex: 'attention', 'transformer', 'gated', 'weighted'
+    text_aggregation: str = 'mean'
+    vis_aggregation: str = 'mean'
+    
+    # Additional kwargs for complex aggregators
+    # Example for attention: {'num_heads': 4, 'dropout': 0.1}
+    # Example for transformer: {'num_layers': 2, 'num_heads': 4}
+    text_aggregation_kwargs: dict = field(default_factory=dict)
+    vis_aggregation_kwargs: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -195,6 +207,11 @@ class ExperimentConfig:
         model_config = ModelConfig(
             vis_model_name=args.vis_model_name,
             text_model_name=args.text_model_name,
+            hidden_size=getattr(args, 'hidden_size', 768),
+            text_aggregation=getattr(args, 'text_aggregation', 'mean'),
+            vis_aggregation=getattr(args, 'vis_aggregation', 'mean'),
+            text_aggregation_kwargs=getattr(args, 'text_aggregation_kwargs', {}),
+            vis_aggregation_kwargs=getattr(args, 'vis_aggregation_kwargs', {}),
         )
         
         data_config = DataConfig(
