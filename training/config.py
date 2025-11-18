@@ -6,7 +6,7 @@ in a type-safe and organized manner.
 """
 
 from dataclasses import dataclass, field, asdict
-from typing import Optional, List, Union, Any
+from typing import Optional
 from pathlib import Path
 
 
@@ -40,8 +40,8 @@ class DataConfig:
     val_ann_path: Optional[str] = None
     train_img_dir: Optional[str] = None
     val_img_dir: Optional[str] = None
-    seq_len: int = 64
-    batch_size: int = 64
+    seq_len: int = 128
+    batch_size: int = 16
     dataloader_workers: int = 0
     
     def __post_init__(self):
