@@ -112,17 +112,20 @@ class AugmentationConfig:
     
     # Text augmentation
     enable_text_augmentation: bool = False
-    text_augmentation_type: str = 'simple'
+    text_augmentation_type: str = 'rule-based'
     
     # General
     seed: Optional[int] = None
     
-    # Curriculum learning settings
+    # Curriculum learning with scheduler-based approach
     enable_curriculum: bool = False
-    total_epochs: Optional[int] = None
-    easy_epochs: Optional[int] = None
-    medium_epochs: Optional[int] = None
-    hard_epochs: Optional[int] = None
+    curriculum_strategy: str = 'linear'  # 'linear', 'cosine', 'exponential', 'step', 'polynomial'
+    warmup_epochs: int = 0
+    
+    # Strategy-specific parameters
+    curriculum_gamma: float = 0.1  # for exponential and step strategies
+    curriculum_step_size: Optional[int] = None  # for step strategy (default: total_epochs // 3)
+    curriculum_power: float = 2.0  # for polynomial strategy
     
     @property
     def enable_augmentation(self) -> bool:
@@ -226,13 +229,14 @@ class ExperimentConfig:
             image_augmentation_type=getattr(args, 'image_augmentation_type', 'masked'),
             patch_size=getattr(args, 'patch_size', 16),
             enable_text_augmentation=getattr(args, 'enable_text_augmentation', False),
-            text_augmentation_type=getattr(args, 'text_augmentation_type', 'simple'),
+            text_augmentation_type=getattr(args, 'text_augmentation_type', 'rule-based'),
             seed=args.seed,
             enable_curriculum=getattr(args, 'enable_curriculum', False),
-            total_epochs=args.epochs,
-            easy_epochs=getattr(args, 'easy_epochs', None),
-            medium_epochs=getattr(args, 'medium_epochs', None),
-            hard_epochs=getattr(args, 'hard_epochs', None),
+            curriculum_strategy=getattr(args, 'curriculum_strategy', 'linear'),
+            warmup_epochs=getattr(args, 'warmup_epochs', 0),
+            curriculum_gamma=getattr(args, 'curriculum_gamma', 0.1),
+            curriculum_step_size=getattr(args, 'curriculum_step_size', None),
+            curriculum_power=getattr(args, 'curriculum_power', 2.0),
         )
         
         training_config = TrainingConfig(

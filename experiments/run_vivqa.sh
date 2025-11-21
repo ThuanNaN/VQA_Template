@@ -38,10 +38,12 @@ SAMPLE_OBSERVATION="--enable_sample_observation"
 IMAGE_AUGMENT_METHOD="masked"  # Options: masked, none
 TEXT_AUGMENT_METHOD="rule-based"  # Options: rule-based, none
 
-# Curriculum Learning Configuration (30 epochs)
-EASY_EPOCHS=9
-MEDIUM_EPOCHS=9
-HARD_EPOCHS=12
+# Curriculum Learning Configuration
+CURRICULUM_STRATEGY="linear"  # Options: linear, cosine, exponential, step, polynomial
+WARMUP_EPOCHS=0
+CURRICULUM_GAMMA=0.1  # For exponential strategy
+CURRICULUM_STEP_SIZE=""  # For step strategy (empty means auto: total_epochs // 3)
+CURRICULUM_POWER=2.0  # For polynomial strategy
 
 # WandB Configuration (set to true to enable)
 ENABLE_WANDB=true
@@ -205,13 +207,12 @@ run_experiment \
 
 run_experiment \
     "exp5_text_augment_cl" \
-    "Training with text augmentation $TEXT_AUGMENT_METHOD and curriculum learning" \
+    "Training with text augmentation $TEXT_AUGMENT_METHOD and curriculum learning ($CURRICULUM_STRATEGY)" \
     "--enable_text_augmentation" \
     "--text_augmentation_type $TEXT_AUGMENT_METHOD" \
     "--enable_curriculum" \
-    "--easy_epochs $EASY_EPOCHS" \
-    "--medium_epochs $MEDIUM_EPOCHS" \
-    "--hard_epochs $HARD_EPOCHS"
+    "--curriculum_strategy $CURRICULUM_STRATEGY" \
+    "--warmup_epochs $WARMUP_EPOCHS"
 
 ################################################################################
 # Experiment 6: Image Augmentation + Curriculum Learning
@@ -219,14 +220,13 @@ run_experiment \
 
 run_experiment \
     "exp6_image_augment_cl" \
-    "Training with image augmentation $IMAGE_AUGMENT_METHOD and curriculum learning" \
+    "Training with image augmentation $IMAGE_AUGMENT_METHOD and curriculum learning ($CURRICULUM_STRATEGY)" \
     "--enable_image_augmentation" \
     "--image_augmentation_type $IMAGE_AUGMENT_METHOD" \
     "--patch_size 16" \
     "--enable_curriculum" \
-    "--easy_epochs $EASY_EPOCHS" \
-    "--medium_epochs $MEDIUM_EPOCHS" \
-    "--hard_epochs $HARD_EPOCHS"
+    "--curriculum_strategy $CURRICULUM_STRATEGY" \
+    "--warmup_epochs $WARMUP_EPOCHS"
 
 ################################################################################
 # Experiment 7: Text + Image Augmentation + Curriculum Learning
@@ -234,16 +234,15 @@ run_experiment \
 
 run_experiment \
     "exp7_full_augment_cl" \
-    "Training with text $TEXT_AUGMENT_METHOD + image $IMAGE_AUGMENT_METHOD augmentation and curriculum learning" \
+    "Training with text $TEXT_AUGMENT_METHOD + image $IMAGE_AUGMENT_METHOD augmentation and curriculum learning ($CURRICULUM_STRATEGY)" \
     "--enable_text_augmentation" \
     "--text_augmentation_type $TEXT_AUGMENT_METHOD" \
     "--enable_image_augmentation" \
     "--image_augmentation_type $IMAGE_AUGMENT_METHOD" \
     "--patch_size 16" \
     "--enable_curriculum" \
-    "--easy_epochs $EASY_EPOCHS" \
-    "--medium_epochs $MEDIUM_EPOCHS" \
-    "--hard_epochs $HARD_EPOCHS"
+    "--curriculum_strategy $CURRICULUM_STRATEGY" \
+    "--warmup_epochs $WARMUP_EPOCHS"
 
 ################################################################################
 # Summary
