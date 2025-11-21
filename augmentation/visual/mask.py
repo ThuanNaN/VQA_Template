@@ -10,6 +10,7 @@ The framework provides flexible difficulty levels for progressive training.
 """
 
 import numpy as np
+from typing import List
 from PIL import Image, ImageFilter, ImageEnhance
 from typing import Optional, Union
 from ..base import BaseImageAugmentation
@@ -107,7 +108,7 @@ class MaskedImageAugmentation(BaseImageAugmentation):
         apply_contrast: bool = True,
         apply_crop: bool = False,
         apply_flip: bool = None
-    ) -> Image.Image:
+    ) -> List[Image.Image]:
         """
         Apply augmentation to an image based on difficulty level.
         
@@ -122,8 +123,13 @@ class MaskedImageAugmentation(BaseImageAugmentation):
             apply_flip: Whether to apply random horizontal flip (uses difficulty default if None)
             
         Returns:
-            Augmented PIL Image
+            List containing single augmented PIL Image for multi-view consistency.
+            Returns [original_image] if no augmentation is applied (difficulty = 0.0).
         """
+        # If no augmentation (difficulty = 0.0), return original
+        if self.difficulty == 0.0:
+            return [image]
+        
         augmented_image = image.copy()
         
         # Apply transformations in order
@@ -150,7 +156,7 @@ class MaskedImageAugmentation(BaseImageAugmentation):
         if apply_masking:
             augmented_image = self._random_masking(augmented_image)
         
-        return augmented_image
+        return [augmented_image]
     
     def _random_masking(self, image: Image.Image) -> Image.Image:
         """

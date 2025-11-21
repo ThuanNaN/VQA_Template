@@ -6,7 +6,7 @@ with curriculum learning to progressively increase difficulty.
 """
 
 import random
-from typing import Optional, Dict, Any, Union
+from typing import Optional, Dict, Any, Union, List
 from ..base import BaseTextAugmentation
 
 class RuleBasedTextAugmentation(BaseTextAugmentation):
@@ -157,7 +157,7 @@ class RuleBasedTextAugmentation(BaseTextAugmentation):
         self.max_replacements = int(min_replacements + self.difficulty * (max_replacements - min_replacements))
         self.max_replacements = max(1, self.max_replacements)  # At least 1
     
-    def augment(self, text: str, **kwargs) -> str:
+    def augment(self, text: str, **kwargs) -> List[str]:
         """
         Apply rule-based text augmentation with curriculum learning.
         
@@ -166,17 +166,18 @@ class RuleBasedTextAugmentation(BaseTextAugmentation):
             **kwargs: Additional options (num_replacements, etc.)
             
         Returns:
-            Augmented text string
+            List containing single augmented text string for multi-view consistency.
+            Returns [original_text] if no augmentation is applied (based on apply_prob).
         """
         # Apply augmentation based on probability (curriculum learning)
         if self.rng.random() >= self.apply_prob:
-            return text
+            return [text]
         
         # Perform synonym replacement
         num_replacements = kwargs.get('num_replacements', self.max_replacements)
         augmented = self._replace_synonyms(text, max_replacements=num_replacements)
         
-        return augmented
+        return [augmented]
     
     def _replace_synonyms(self, text: str, max_replacements: int = 2) -> str:
         """

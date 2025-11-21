@@ -30,9 +30,10 @@ class BaseDataset(Dataset):
         """
         Get a single sample from the dataset.
         
-        Supports both single and multiple inputs:
-        - Image augmentation can return single PIL Image or list of PIL Images
-        - Text augmentation can return single string or list of strings
+        All augmentations now return lists for multi-view support:
+        - Image augmentation returns list of PIL Images
+        - Text augmentation returns list of strings
+        - If no augmentation, lists contain only the original
         
         Returns:
             Dict with:
@@ -45,53 +46,46 @@ class BaseDataset(Dataset):
         pil_image = Image.open(img_path).convert('RGB')
         
         # Apply image augmentation if provided
-        # Augmentation can return single image or list of images
+        # Augmentation always returns list of images
         if self.image_augmentation is not None:
-            augmented_result = self.image_augmentation(pil_image)
+            augmented_images = self.image_augmentation(pil_image)
             
-            # Handle both single and multiple images
-            if isinstance(augmented_result, list):
-                # Multiple images
-                images = [self.vis_processor(img, return_tensors="pt")["pixel_values"].squeeze(0) 
-                         for img in augmented_result]
-                image = torch.stack(images)  # [num_images, C, H, W]
+            # Process all images in the list
+            images = [self.vis_processor(img, return_tensors="pt")["pixel_values"].squeeze(0) 
+                     for img in augmented_images]
+            
+            if len(images) == 1:
+                image = images[0]  # [C, H, W]
             else:
-                # Single image
-                image = self.vis_processor(augmented_result, return_tensors="pt")["pixel_values"].squeeze(0)
+                image = torch.stack(images)  # [num_images, C, H, W]
         else:
+            # No augmentation - process single image
             image = self.vis_processor(pil_image, return_tensors="pt")["pixel_values"].squeeze(0)
         
         question_text = self.data['questions'][idx]
         
         # Apply text augmentation if provided
-        # Augmentation can return single text or list of texts (paraphrases)
+        # Augmentation always returns list of texts
         if self.text_augmentation is not None:
-            augmented_text = self.text_augmentation(question_text)
+            augmented_texts = self.text_augmentation(question_text)
             
-            # Handle both single and multiple texts
-            if isinstance(augmented_text, list):
-                # Multiple texts (e.g., paraphrases)
-                questions = self.text_processor(
-                    augmented_text,  # List of strings
-                    return_tensors="pt", 
-                    padding="max_length", 
-                    truncation=True, 
-                    **self.kwargs
-                )
+            # Process all texts in the list
+            questions = self.text_processor(
+                augmented_texts,  # List of strings
+                return_tensors="pt", 
+                padding="max_length", 
+                truncation=True, 
+                **self.kwargs
+            )
+            
+            if len(augmented_texts) == 1:
+                question_input_ids = questions["input_ids"].squeeze(0)  # [seq_len]
+                question_attention_mask = questions["attention_mask"].squeeze(0)  # [seq_len]
+            else:
                 question_input_ids = questions["input_ids"]  # [num_texts, seq_len]
                 question_attention_mask = questions["attention_mask"]  # [num_texts, seq_len]
-            else:
-                # Single text
-                question = self.text_processor(
-                    augmented_text, 
-                    return_tensors="pt", 
-                    padding="max_length", 
-                    truncation=True, 
-                    **self.kwargs
-                )
-                question_input_ids = question["input_ids"].squeeze(0)  # [seq_len]
-                question_attention_mask = question["attention_mask"].squeeze(0)  # [seq_len]
         else:
+            # No augmentation - process single text
             question = self.text_processor(
                 question_text, 
                 return_tensors="pt", 
@@ -171,7 +165,7 @@ class BaseDataset(Dataset):
         Set or update the image augmentation function.
         
         Args:
-            augmentation: Callable that takes PIL Image and returns augmented PIL Image
+            augmentation: Callable that takes PIL Image and returns list of augmented PIL Images
         """
         self.image_augmentation = augmentation
     
@@ -180,6 +174,6 @@ class BaseDataset(Dataset):
         Set or update the text augmentation function.
         
         Args:
-            augmentation: Callable that takes text string and returns augmented text string
+            augmentation: Callable that takes text string and returns list of augmented text strings
         """
         self.text_augmentation = augmentation

@@ -6,7 +6,7 @@ strategies with curriculum learning support.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, List
 from PIL import Image
 
 
@@ -87,10 +87,11 @@ class BaseImageAugmentation(BaseAugmentation):
     Abstract base class for image augmentation strategies.
     
     Extends BaseAugmentation with image-specific functionality.
+    All image augmentations must return a list of PIL Images for multi-view support.
     """
     
     @abstractmethod
-    def augment(self, image: Image.Image, **kwargs) -> Image.Image:
+    def augment(self, image: Image.Image, **kwargs) -> List[Image.Image]:
         """
         Apply augmentation to an image.
         
@@ -99,7 +100,8 @@ class BaseImageAugmentation(BaseAugmentation):
             **kwargs: Additional augmentation options
             
         Returns:
-            Augmented PIL Image
+            List of augmented PIL Images (multi-view).
+            If no augmentation, returns list with single original image.
         """
         pass
 
@@ -109,10 +111,11 @@ class BaseTextAugmentation(BaseAugmentation):
     Abstract base class for text augmentation strategies.
     
     Extends BaseAugmentation with text-specific functionality.
+    All text augmentations must return a list of strings for multi-view support.
     """
     
     @abstractmethod
-    def augment(self, text: str, **kwargs) -> str:
+    def augment(self, text: str, **kwargs) -> List[str]:
         """
         Apply augmentation to text.
         
@@ -121,7 +124,8 @@ class BaseTextAugmentation(BaseAugmentation):
             **kwargs: Additional augmentation options
             
         Returns:
-            Augmented text string
+            List of augmented text strings (multi-view).
+            If no augmentation, returns list with single original text.
         """
         pass
 
@@ -131,15 +135,16 @@ class NoAugmentation(BaseAugmentation):
     No-op augmentation that returns data unchanged.
     
     Useful for disabling augmentation or as a default strategy.
+    Returns a list containing only the original data for consistency.
     """
     
     def _configure_parameters(self):
         """No parameters needed for no-op."""
         pass
     
-    def augment(self, data: Any, **kwargs) -> Any:
-        """Return data unchanged."""
-        return data
+    def augment(self, data: Any, **kwargs) -> List[Any]:
+        """Return list containing original data unchanged."""
+        return [data]
     
     def get_augmentation_info(self) -> dict:
         """Return info indicating no augmentation."""
