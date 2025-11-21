@@ -49,15 +49,7 @@ class BaseDataset(Dataset):
         # Augmentation always returns list of images
         if self.image_augmentation is not None:
             augmented_images = self.image_augmentation(pil_image)
-            
-            # Process all images in the list
-            images = [self.vis_processor(img, return_tensors="pt")["pixel_values"].squeeze(0) 
-                     for img in augmented_images]
-            
-            if len(images) == 1:
-                image = images[0]  # [C, H, W]
-            else:
-                image = torch.stack(images)  # [num_images, C, H, W]
+            image = self.vis_processor(augmented_images, return_tensors="pt")["pixel_values"].squeeze(0) 
         else:
             # No augmentation - process single image
             image = self.vis_processor(pil_image, return_tensors="pt")["pixel_values"].squeeze(0)
