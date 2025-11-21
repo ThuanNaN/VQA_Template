@@ -71,8 +71,8 @@ class DataConfig:
                 'val_img': 'data/vitextvqa/images',
             },
             'evjvqa': {
-                'train_ann': 'data/evjvqa/train.json',
-                'val_ann': 'data/evjvqa/val.json',
+                'train_ann': 'data/evjvqa/evjvqa_train.json',
+                'val_ann': 'data/evjvqa/evjvqa_val.json',
                 'train_img': 'data/evjvqa/images',
                 'val_img': 'data/evjvqa/images',
             },

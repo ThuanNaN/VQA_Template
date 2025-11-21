@@ -16,6 +16,7 @@ class EVJVQADataset(BaseDataset):
     """
     
     train_ann = "data/evjvqa/evjvqa_train.json"
+    val_ann = "data/evjvqa/evjvqa_val.json"
 
     def __init__(self, ann_path, img_dir, text_processor, vis_processor, **kwargs):
         """
