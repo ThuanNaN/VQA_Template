@@ -172,6 +172,7 @@ cython_debug/
 
 data/MSCOCO/
 data/openvivqa/
+data/evjvqa/
 data/vivqa/
 data/vivqax/
 data/viocrvqa/
@@ -180,4 +181,7 @@ data/vitextvqa/
 *.tsv
 test.ipynb
 runs/
+observations/
+wrong_predictions/
 wandb/
+*.zip
