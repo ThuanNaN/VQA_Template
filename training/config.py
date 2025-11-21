@@ -40,7 +40,7 @@ class DataConfig:
     val_ann_path: Optional[str] = None
     train_img_dir: Optional[str] = None
     val_img_dir: Optional[str] = None
-    seq_len: int = 128
+    seq_len: int = 64
     batch_size: int = 16
     dataloader_workers: int = 0
     
