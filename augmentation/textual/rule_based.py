@@ -175,9 +175,12 @@ class RuleBasedTextAugmentation(BaseTextAugmentation):
             
         Returns:
             List of text strings including original and paraphrases.
+            Always returns consistent length:
             - Easy: [original, para1, para2] (3 total)
             - Medium: [original, para1] (2 total)
             - Hard: [original] (1 total)
+            
+            If not enough paraphrases can be generated, duplicates the original.
         """
         # Hard phase: no augmentation, return only original
         if self.num_paraphrases == 0:
@@ -188,17 +191,21 @@ class RuleBasedTextAugmentation(BaseTextAugmentation):
         
         # Select paraphrases based on difficulty
         if not all_paraphrases:
-            # No paraphrases generated, return original
-            return [text]
+            # No paraphrases generated, pad with duplicates of original
+            # This ensures consistent batch sizes
+            return [text] * (self.num_paraphrases + 1)
         
         # Select num_paraphrases from available paraphrases
         if len(all_paraphrases) >= self.num_paraphrases:
             selected_paraphrases = self.rng.sample(all_paraphrases, self.num_paraphrases)
         else:
-            # Not enough unique paraphrases, use what we have
+            # Not enough unique paraphrases, use what we have and pad with original
             selected_paraphrases = all_paraphrases
+            # Pad with original text to reach desired count
+            while len(selected_paraphrases) < self.num_paraphrases:
+                selected_paraphrases.append(text)
         
-        # Return original + paraphrases
+        # Return original + paraphrases (always num_paraphrases + 1 items)
         return [text] + selected_paraphrases
     
     def _paraphrase(self, sentence: str) -> List[str]:
