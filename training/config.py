@@ -79,8 +79,8 @@ class DataConfig:
             'vivqax': {
                 'train_ann': 'data/vivqax/ViVQA-X_train.json',
                 'val_ann': 'data/vivqax/ViVQA-X_val.json',
-                'train_img': 'data/vivqax/images',
-                'val_img': 'data/vivqax/images',
+                'train_img': 'data/MSCOCO/train2014',
+                'val_img': 'data/MSCOCO/val2014',
             },
             'viocrvqa': {
                 'train_ann': 'data/viocrvqa/train.json',
