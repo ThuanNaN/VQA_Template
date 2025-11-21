@@ -9,7 +9,6 @@ from typing import Optional, Union
 from .base import BaseImageAugmentation, BaseTextAugmentation, NoAugmentation
 from .visual.mask import MaskedImageAugmentation
 from .textual.rule_based import RuleBasedTextAugmentation
-from .textual.paraphrase import ParaphraseTextAugmentation, SimpleParaphraseAugmentation
 
 
 class AugmentationFactory:
@@ -36,8 +35,6 @@ class AugmentationFactory:
     
     _TEXT_AUGMENTATIONS = {
         'rule-based': RuleBasedTextAugmentation,
-        'paraphrase': ParaphraseTextAugmentation,
-        'simple-paraphrase': SimpleParaphraseAugmentation,
         'none': NoAugmentation,
     }
     
@@ -106,7 +103,7 @@ class AugmentationFactory:
     @classmethod
     def create_text_augmentation(
         cls,
-        augmentation_type: str = 'simple',
+        augmentation_type: str = 'rule-based',
         difficulty: Union[int, float] = 0.0,
         seed: Optional[int] = None
     ) -> BaseTextAugmentation:
@@ -115,8 +112,8 @@ class AugmentationFactory:
         
         Args:
             augmentation_type: Type of text augmentation
-                - 'simple': Basic word-level operations (language-agnostic)
-                - 'rule-based': Rich Vietnamese linguistic rules
+                - 'rule-based': POS tagging-based paraphrase for Vietnamese
+                - 'none': No augmentation
             difficulty: Difficulty level for curriculum learning (float 0.0-1.0)
             seed: Random seed for reproducibility
             
