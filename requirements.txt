@@ -17,3 +17,4 @@ pillow==11.3.0
 ollama==0.6.1
 google-genai==1.50.1
 openai==2.8.0
+underthesea==8.3.0
