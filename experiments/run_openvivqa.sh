@@ -16,6 +16,9 @@
 # 7. Text + Image augmentation + Curriculum Learning
 ################################################################################
 
+# GPU Configuration
+export CUDA_VISIBLE_DEVICES=0  # Specify GPU ID(s) to use (e.g., "0", "0,1", "0,1,2,3")
+
 # Configuration
 DATASET_NAME="openvivqa"
 VIS_MODEL="google/vit-base-patch16-224"
