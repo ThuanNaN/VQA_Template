@@ -171,7 +171,6 @@ This document provides a quick reference summary of Vietnamese VQA datasets anal
 ## References
 
 For detailed analysis, see:
-- [Complete Dataset Survey](DATASET_SURVEY.md)
 - [Dataset Implementations](../dataset/)
 - [Usage Examples](../examples/)
 

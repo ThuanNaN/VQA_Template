@@ -376,10 +376,8 @@ A: Use curriculum learning: `--enable_curriculum`
 
 For a comprehensive analysis of Vietnamese VQA datasets, see our [Dataset Survey Documentation](docs/README.md):
 
-- 📊 [Complete Dataset Survey](docs/DATASET_SURVEY.md) - Detailed analysis of building methods, generation approaches, and quality
 - ⚡ [Quick Reference Guide](docs/DATASET_QUICK_REFERENCE.md) - Dataset comparison and key findings
 - 🔧 [Template Improvements](docs/TEMPLATE_IMPROVEMENTS.md) - 100+ concrete template examples
-- 🤝 [Contributing Guidelines](docs/CONTRIBUTING.md) - How to contribute improvements
 
 ### Supported Datasets
 
@@ -390,7 +388,6 @@ For a comprehensive analysis of Vietnamese VQA datasets, see our [Dataset Survey
 - [ ] [ViOCR-VQA](https://huggingface.co/datasets/VLAI-AIVN/ViOCR-VQA) - Vietnamese Visual Question Answering Dataset with OCR
 - [ ] [EVJ-VQA](https://huggingface.co/datasets/dinhanhx/evjvqa) - Vietnamese Visual Question Answering Dataset for e-commerce domain
 - [ ] [ViTextVQA](https://huggingface.co/datasets/minhquan6203/ViTextVQA) - Vietnamese Text-based Visual Question Answering Dataset
-- [ ] [ViCLEVR](docs/DATASET_SURVEY.md#viclevr) - Vietnamese CLEVR Dataset (planned/placeholder)
 
 ## Paper
 
@@ -399,23 +396,6 @@ For a comprehensive analysis of Vietnamese VQA datasets, see our [Dataset Survey
 - [ ] [Stacked Attention Networks for Image Question Answering](https://arxiv.org/pdf/1511.02274)
 - [ ] [LXMERT: Learning Cross-Modality Encoder Representations from Transformers](https://arxiv.org/abs/1908.07490)
 - [ ] [Bottom-Up and Top-Down Attention for Image Captioning and Visual Question Answering](https://arxiv.org/abs/1707.07998)
-
-## Contributing
-
-We welcome contributions to improve Vietnamese VQA datasets and tools! See our [Contributing Guidelines](docs/CONTRIBUTING.md) for:
-
-- Priority contribution areas
-- Template enhancement opportunities
-- Code contribution workflow
-- Documentation improvements
-
-**Top Contribution Opportunities**:
-
-1. ✨ Expand ViVQA templates (35+ new templates)
-2. 🛒 Create EVJVQA Vietnamese e-commerce templates
-3. 🔬 Integrate ViCLEVR dataset support
-4. 🤖 Build modern LLM-based generation pipeline
-5. 📊 Develop quality analysis tools
 
 ## Citation
 
