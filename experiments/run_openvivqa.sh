@@ -20,9 +20,9 @@
 DATASET_NAME="openvivqa"
 VIS_MODEL="google/vit-base-patch16-224"
 TEXT_MODEL="vinai/bartpho-syllable-base"
-SEED=42
+SEED=71
 EPOCHS=30
-BATCH_SIZE=64
+BATCH_SIZE=16
 SEQ_LEN=64
 LEARNING_RATE=1e-4
 WEIGHT_DECAY=1e-4
