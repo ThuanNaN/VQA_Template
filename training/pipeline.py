@@ -207,16 +207,30 @@ class VQATrainingPipeline:
         if not self.config.augmentation.enable_curriculum:
             return None
         
-        # Use smooth curriculum scheduler with cosine strategy by default
-        scheduler = CurriculumScheduler(
-            total_epochs=self.config.augmentation.total_epochs or self.config.training.epochs,
-            strategy='cosine',  # Smooth S-curve progression
-            warmup_epochs=max(1, int((self.config.augmentation.total_epochs or self.config.training.epochs) * 0.1)),  # 10% warmup
-            min_difficulty=0.1,  # Start gentle
-            max_difficulty=0.9   # Cap intensity
-        )
+        # Create scheduler with configured strategy
+        total_epochs = self.config.training.epochs
+        config = self.config.augmentation
         
-        logger.info("Smooth Curriculum Learning enabled")
+        # Prepare kwargs based on strategy
+        scheduler_kwargs = {
+            'total_epochs': total_epochs,
+            'strategy': config.curriculum_strategy,
+            'warmup_epochs': config.warmup_epochs,
+        }
+        
+        # Add strategy-specific parameters
+        if config.curriculum_strategy == 'exponential':
+            scheduler_kwargs['gamma'] = config.curriculum_gamma
+        elif config.curriculum_strategy == 'step':
+            step_size = config.curriculum_step_size or (total_epochs // 3)
+            scheduler_kwargs['step_size'] = step_size
+            scheduler_kwargs['gamma'] = config.curriculum_gamma
+        elif config.curriculum_strategy == 'polynomial':
+            scheduler_kwargs['power'] = config.curriculum_power
+        
+        scheduler = CurriculumScheduler(**scheduler_kwargs)
+        
+        logger.info(f"Curriculum Learning enabled with {config.curriculum_strategy} strategy")
         logger.info(f"Schedule: {scheduler.get_schedule_info()}")
         
         return scheduler
