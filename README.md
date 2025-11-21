@@ -106,7 +106,7 @@ Train the VQA model with default settings:
 ```bash
 python train.py \
     --dataset_name vivqa \
-    --batch_size 64 \
+    --batch_size 16 \
     --epochs 30 \
     --learning_rate 1e-4
 ```
@@ -229,7 +229,7 @@ augmentor = AugmentationFactory.create_image_augmentation(
 #### Dataset Arguments
 
 - `--dataset_name` - Dataset to use (vivqa, openvivqa, vitextvqa, etc.)
-- `--batch_size` - Batch size (default: 64)
+- `--batch_size` - Batch size (default: 16)
 - `--seq_len` - Sequence length (default: 64)
 
 #### Training Arguments
@@ -287,7 +287,7 @@ Enable wandb logging by adding the `--report_to_wandb` flag:
 ```bash
 python train.py \
     --dataset_name vivqa \
-    --batch_size 64 \
+    --batch_size 16 \
     --epochs 30 \
     --learning_rate 1e-4 \
     --report_to_wandb \
