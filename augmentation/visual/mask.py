@@ -10,8 +10,7 @@ The framework provides flexible difficulty levels for progressive training.
 """
 
 import numpy as np
-from typing import List
-from PIL import Image, ImageFilter, ImageEnhance
+from PIL import Image, ImageFilter
 from typing import Optional, Union
 from ..base import BaseImageAugmentation
 
@@ -22,14 +21,6 @@ class MaskedImageAugmentation(BaseImageAugmentation):
     
     Implements various augmentation techniques inspired by Masked Autoencoders,
     organized by difficulty levels to enable curriculum learning from easy to hard.
-    
-    Key Features:
-    - Random masking (MAE-inspired): Patch-based and block masking
-    - Color jittering with varying intensities
-    - Gaussian blur with adjustable strengths
-    - Brightness and contrast adjustments
-    - Random cropping and flipping
-    - Curriculum Learning support (easy → medium → hard progression)
     
     Args:
         difficulty: Difficulty level for augmentation (EASY, MEDIUM, or HARD)
@@ -67,97 +58,77 @@ class MaskedImageAugmentation(BaseImageAugmentation):
         return min_ratio + self.difficulty * (max_ratio - min_ratio)
     
     def _configure_parameters(self):
-        """Configure augmentation parameters based on difficulty level (0.0-1.0)."""
+        """Configure augmentation parameters based on difficulty level (0.0-1.0).
+        
+        Three-phase strategy:
+        - Easy (0.0 - 0.33): No augmentation
+        - Medium (0.33 - 0.66): Blur random blocks
+        - Hard (0.66 - 1.0): Mask random blocks
+        """
         # Set default mask ratio based on difficulty if not provided
         if self._mask_ratio is None:
             self.mask_ratio = self._get_default_mask_ratio()
         else:
             self.mask_ratio = self._mask_ratio
         
-        # Smooth interpolation for all parameters based on difficulty (0.0-1.0)
-        # Color jitter: 0.0 to 0.5
-        self.color_jitter_strength = self.difficulty * 0.5
+        # Determine augmentation phase
+        if self.difficulty < 0.33:
+            # Easy: No augmentation
+            self.augmentation_phase = 'easy'
+            self.apply_blur_blocks = False
+            self.apply_mask_blocks = False
+        elif self.difficulty < 0.66:
+            # Medium: Blur random blocks
+            self.augmentation_phase = 'medium'
+            self.apply_blur_blocks = True
+            self.apply_mask_blocks = False
+        else:
+            # Hard: Mask random blocks
+            self.augmentation_phase = 'hard'
+            self.apply_blur_blocks = False
+            self.apply_mask_blocks = True
         
-        # Brightness: (1.0, 1.0) to (0.5, 1.5)
-        brightness_range = self.difficulty * 0.5
-        self.brightness_factor = (1.0 - brightness_range, 1.0 + brightness_range)
-        
-        # Contrast: (1.0, 1.0) to (0.5, 1.5)
-        contrast_range = self.difficulty * 0.5
-        self.contrast_factor = (1.0 - contrast_range, 1.0 + contrast_range)
-        
-        # Blur radius: 0.0 to 3.0
-        min_blur, max_blur = 0.0, 3.0
-        blur_range = self.difficulty * max_blur
-        self.blur_radius = (min_blur, blur_range)
-        
-        # Apply flip if difficulty > 0.3
-        self.apply_flip = self.difficulty > 0.3
-        
-        # Crop scale: 1.0 to 0.7 (inverse relationship)
-        min_scale = 0.7
-        self.crop_scale = (min_scale + (1.0 - self.difficulty) * (1.0 - min_scale), 1.0)
+        # Block blur radius for medium phase: 2.0 to 5.0
+        self.block_blur_radius = 3.5
     
     def augment(
         self, 
         image: Image.Image,
         apply_masking: bool = True,
-        apply_color_jitter: bool = True,
-        apply_blur: bool = True,
-        apply_brightness: bool = True,
-        apply_contrast: bool = True,
-        apply_crop: bool = False,
-        apply_flip: bool = None
-    ) -> List[Image.Image]:
+    ) -> Image.Image:
         """
         Apply augmentation to an image based on difficulty level.
         
+        Three-phase strategy:
+        - Easy (difficulty < 0.33): No augmentation, return original
+        - Medium (0.33 <= difficulty < 0.66): Blur random blocks
+        - Hard (difficulty >= 0.66): Mask random blocks
+        
         Args:
             image: PIL Image to augment
-            apply_masking: Whether to apply random masking
-            apply_color_jitter: Whether to apply color jittering
-            apply_blur: Whether to apply Gaussian blur
-            apply_brightness: Whether to adjust brightness
-            apply_contrast: Whether to adjust contrast
-            apply_crop: Whether to apply random cropping
-            apply_flip: Whether to apply random horizontal flip (uses difficulty default if None)
+            apply_masking: Whether to apply random masking (hard phase)
             
         Returns:
-            List containing single augmented PIL Image for multi-view consistency.
-            Returns [original_image] if no augmentation is applied (difficulty = 0.0).
+            List containing single augmented PIL Image.
+            Returns [original_image] for easy phase (difficulty < 0.33).
         """
-        # If no augmentation (difficulty = 0.0), return original
-        if self.difficulty == 0.0:
-            return [image]
+        # Easy phase: No augmentation
+        if self.augmentation_phase == 'easy':
+            return image
         
         augmented_image = image.copy()
         
-        # Apply transformations in order
-        if apply_crop:
-            augmented_image = self._random_crop(augmented_image)
+        # Medium phase: Blur random blocks
+        if self.augmentation_phase == 'medium' and self.apply_blur_blocks:
+            augmented_image = self._blur_random_blocks(augmented_image)
         
-        if apply_flip is None:
-            apply_flip = self.apply_flip
-        if apply_flip and self.rng.random() > 0.5:
-            augmented_image = augmented_image.transpose(Image.FLIP_LEFT_RIGHT)
-        
-        if apply_color_jitter:
-            augmented_image = self._color_jitter(augmented_image)
-        
-        if apply_brightness:
-            augmented_image = self._adjust_brightness(augmented_image)
-        
-        if apply_contrast:
-            augmented_image = self._adjust_contrast(augmented_image)
-        
-        if apply_blur:
-            augmented_image = self._gaussian_blur(augmented_image)
-        
-        if apply_masking:
+        # Hard phase: Mask random blocks
+        if self.augmentation_phase == 'hard' and self.apply_mask_blocks and apply_masking:
             augmented_image = self._random_masking(augmented_image)
         
-        return [augmented_image]
+        return augmented_image
     
+
     def _random_masking(self, image: Image.Image) -> Image.Image:
         """
         Apply random masking inspired by Masked Autoencoders.
@@ -207,87 +178,56 @@ class MaskedImageAugmentation(BaseImageAugmentation):
         
         return Image.fromarray(img_array)
     
-    def _color_jitter(self, image: Image.Image) -> Image.Image:
+    def _blur_random_blocks(self, image: Image.Image) -> Image.Image:
         """
-        Apply color jittering to the image.
-        
-        Args:
-            image: PIL Image to transform
-            
-        Returns:
-            Color-jittered PIL Image
-        """
-        # Random hue shift
-        enhancer = ImageEnhance.Color(image)
-        factor = 1 + self.rng.uniform(-self.color_jitter_strength, self.color_jitter_strength)
-        image = enhancer.enhance(factor)
-        
-        return image
-    
-    def _adjust_brightness(self, image: Image.Image) -> Image.Image:
-        """
-        Adjust image brightness.
-        
-        Args:
-            image: PIL Image to transform
-            
-        Returns:
-            Brightness-adjusted PIL Image
-        """
-        enhancer = ImageEnhance.Brightness(image)
-        factor = self.rng.uniform(self.brightness_factor[0], self.brightness_factor[1])
-        return enhancer.enhance(factor)
-    
-    def _adjust_contrast(self, image: Image.Image) -> Image.Image:
-        """
-        Adjust image contrast.
-        
-        Args:
-            image: PIL Image to transform
-            
-        Returns:
-            Contrast-adjusted PIL Image
-        """
-        enhancer = ImageEnhance.Contrast(image)
-        factor = self.rng.uniform(self.contrast_factor[0], self.contrast_factor[1])
-        return enhancer.enhance(factor)
-    
-    def _gaussian_blur(self, image: Image.Image) -> Image.Image:
-        """
-        Apply Gaussian blur to the image.
+        Apply Gaussian blur to random blocks (patches) of the image.
+        Used in medium difficulty phase.
         
         Args:
             image: PIL Image to blur
             
         Returns:
-            Blurred PIL Image
-        """
-        radius = self.rng.uniform(self.blur_radius[0], self.blur_radius[1])
-        return image.filter(ImageFilter.GaussianBlur(radius=radius))
-    
-    def _random_crop(self, image: Image.Image) -> Image.Image:
-        """
-        Apply random cropping and resize back to original size.
-        
-        Args:
-            image: PIL Image to crop
-            
-        Returns:
-            Cropped and resized PIL Image
+            Image with random blocks blurred
         """
         width, height = image.size
-        scale = self.rng.uniform(self.crop_scale[0], self.crop_scale[1])
         
-        new_width = int(width * scale)
-        new_height = int(height * scale)
+        # Convert to numpy for easier manipulation
+        img_array = np.array(image)
         
-        # Random crop position
-        left = self.rng.randint(0, width - new_width + 1)
-        top = self.rng.randint(0, height - new_height + 1)
+        # Calculate number of patches
+        n_patches_h = height // self.patch_size
+        n_patches_w = width // self.patch_size
+        total_patches = n_patches_h * n_patches_w
         
-        cropped = image.crop((left, top, left + new_width, top + new_height))
-        # Resize back to original size
-        return cropped.resize((width, height), Image.BILINEAR)
+        # Determine number of patches to blur (same ratio as masking)
+        n_blurred = int(total_patches * self.mask_ratio)
+        
+        # Create blur indices
+        patch_indices = np.arange(total_patches)
+        blurred_indices = self.rng.choice(patch_indices, size=n_blurred, replace=False)
+        
+        # Convert back to PIL for filtering
+        pil_image = Image.fromarray(img_array)
+        
+        # Apply blur to selected patches
+        for idx in blurred_indices:
+            # Convert 1D index to 2D patch coordinates
+            patch_row = idx // n_patches_w
+            patch_col = idx % n_patches_w
+            
+            # Calculate pixel coordinates
+            y_start = patch_row * self.patch_size
+            y_end = min(y_start + self.patch_size, height)
+            x_start = patch_col * self.patch_size
+            x_end = min(x_start + self.patch_size, width)
+            
+            # Extract patch, blur it, and paste back
+            patch = pil_image.crop((x_start, y_start, x_end, y_end))
+            blurred_patch = patch.filter(ImageFilter.GaussianBlur(radius=self.block_blur_radius))
+            pil_image.paste(blurred_patch, (x_start, y_start))
+        
+        return pil_image
+    
     
     def get_augmentation_info(self) -> dict:
         """
@@ -298,12 +238,10 @@ class MaskedImageAugmentation(BaseImageAugmentation):
         """
         return {
             "difficulty": self.difficulty,
+            "augmentation_phase": self.augmentation_phase,
             "patch_size": self.patch_size,
             "mask_ratio": self.mask_ratio,
-            "color_jitter_strength": self.color_jitter_strength,
-            "brightness_factor": self.brightness_factor,
-            "contrast_factor": self.contrast_factor,
-            "blur_radius": self.blur_radius,
-            "apply_flip": self.apply_flip,
-            "crop_scale": self.crop_scale,
+            "apply_blur_blocks": self.apply_blur_blocks,
+            "apply_mask_blocks": self.apply_mask_blocks,
+            "block_blur_radius": getattr(self, 'block_blur_radius', None),
         }

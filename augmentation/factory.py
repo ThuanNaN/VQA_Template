@@ -8,7 +8,6 @@ augmentation objects based on type and configuration.
 from typing import Optional, Union
 from .base import BaseImageAugmentation, BaseTextAugmentation, NoAugmentation
 from .visual.mask import MaskedImageAugmentation
-from .visual.multi_view import MultiViewImageAugmentation, CropMultiViewAugmentation
 from .textual.rule_based import RuleBasedTextAugmentation
 from .textual.paraphrase import ParaphraseTextAugmentation, SimpleParaphraseAugmentation
 
@@ -32,8 +31,6 @@ class AugmentationFactory:
     # Registry of available augmentation types
     _IMAGE_AUGMENTATIONS = {
         'masked': MaskedImageAugmentation,
-        'multi-view': MultiViewImageAugmentation,
-        'crop-multi-view': CropMultiViewAugmentation,
         'none': NoAugmentation,
     }
     
