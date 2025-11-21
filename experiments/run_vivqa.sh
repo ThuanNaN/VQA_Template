@@ -165,7 +165,7 @@ mkdir -p $OUTPUT_DIR
 
 run_experiment \
     "exp1_baseline" \
-    "Baseline training without any augmentation"
+    "Baseline training without any augmentation" || exit 1
 
 ################################################################################
 # Experiment 2: Text Augmentation Only
@@ -175,7 +175,7 @@ run_experiment \
     "exp2_text_augment" \
     "Training with text augmentation only $TEXT_AUGMENT_METHOD" \
     "--enable_text_augmentation" \
-    "--text_augmentation_type $TEXT_AUGMENT_METHOD"
+    "--text_augmentation_type $TEXT_AUGMENT_METHOD" || exit 1
 
 ################################################################################
 # Experiment 3: Image Augmentation Only
@@ -186,7 +186,7 @@ run_experiment \
     "Training with image augmentation $IMAGE_AUGMENT_METHOD only" \
     "--enable_image_augmentation" \
     "--image_augmentation_type $IMAGE_AUGMENT_METHOD" \
-    "--patch_size 16"
+    "--patch_size 16" || exit 1
 
 ################################################################################
 # Experiment 4: Text + Image Augmentation
@@ -199,7 +199,7 @@ run_experiment \
     "--text_augmentation_type $TEXT_AUGMENT_METHOD" \
     "--enable_image_augmentation" \
     "--image_augmentation_type $IMAGE_AUGMENT_METHOD" \
-    "--patch_size 16"
+    "--patch_size 16" || exit 1
 
 ################################################################################
 # Experiment 5: Text Augmentation + Curriculum Learning
@@ -212,7 +212,7 @@ run_experiment \
     "--text_augmentation_type $TEXT_AUGMENT_METHOD" \
     "--enable_curriculum" \
     "--curriculum_strategy $CURRICULUM_STRATEGY" \
-    "--warmup_epochs $WARMUP_EPOCHS"
+    "--warmup_epochs $WARMUP_EPOCHS" || exit 1
 
 ################################################################################
 # Experiment 6: Image Augmentation + Curriculum Learning
@@ -226,7 +226,7 @@ run_experiment \
     "--patch_size 16" \
     "--enable_curriculum" \
     "--curriculum_strategy $CURRICULUM_STRATEGY" \
-    "--warmup_epochs $WARMUP_EPOCHS"
+    "--warmup_epochs $WARMUP_EPOCHS" || exit 1
 
 ################################################################################
 # Experiment 7: Text + Image Augmentation + Curriculum Learning
@@ -242,7 +242,7 @@ run_experiment \
     "--patch_size 16" \
     "--enable_curriculum" \
     "--curriculum_strategy $CURRICULUM_STRATEGY" \
-    "--warmup_epochs $WARMUP_EPOCHS"
+    "--warmup_epochs $WARMUP_EPOCHS" || exit 1
 
 ################################################################################
 # Summary
