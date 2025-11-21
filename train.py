@@ -10,7 +10,6 @@ This script demonstrates the new OOP-based training pipeline with:
 
 import argparse
 import logging
-from pathlib import Path
 from dotenv import load_dotenv
 
 from training import ExperimentConfig, VQATrainingPipeline
