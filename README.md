@@ -56,8 +56,7 @@ python create_vivqa_image.py
 ### Split EVJVQA Dataset
 
 ```bash
-cd scripts
-python split_evjvqa_ds.py
+python scripts/split_evjvqa_ds.py
 ```
 
 ### Tools
