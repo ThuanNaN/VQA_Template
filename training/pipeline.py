@@ -328,7 +328,10 @@ class VQATrainingPipeline:
             )
             logger.info(f"Wrong prediction tracking enabled: {wrong_pred_dir}")
         
-        early_stopping = EarlyStoppingCallback(self.config.training.patience)
+        if self.config.training.patience > 0:
+            early_stopping = EarlyStoppingCallback(self.config.training.patience)
+        else:
+            early_stopping = None
         
         trainer = VQATrainer(
             model=model,
@@ -336,7 +339,7 @@ class VQATrainingPipeline:
             train_dataset=train_dataset,
             eval_dataset=val_dataset,
             compute_metrics=compute_metrics,
-            callbacks=[early_stopping],
+            callbacks=[early_stopping] if early_stopping is not None else [],
             curriculum_scheduler=curriculum_scheduler,
             augmentation_factory=augmentation_factory,
             sample_observer=sample_observer,
