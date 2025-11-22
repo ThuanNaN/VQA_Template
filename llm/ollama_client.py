@@ -5,7 +5,10 @@ from typing import Iterable, Dict, Any, Iterator
 import ollama
 from .base import LLMClient
 from dotenv import load_dotenv
+import logging
 load_dotenv()
+logger = logging.getLogger(__name__)
+
 
 class OllamaClient(LLMClient):
     """Ollama local LLM client wrapper.
@@ -33,7 +36,7 @@ class OllamaClient(LLMClient):
             models = self.client.list()
             return [model['model'] for model in models.get('models', [])]
         except Exception as e:
-            print(f"[ERROR] Failed to list Ollama models: {e}")
+            logger.error(f"Failed to list Ollama models: {e}")
             return []
 
     def chat(self, messages: Iterable[Dict[str, Any]], **kwargs) -> Dict[str, Any]:
@@ -145,7 +148,7 @@ def example_chat():
     client = OllamaClient(default_model="llama3")
     
     # List available models
-    print("Available models:", client.list_local_models())
+    logger.info("Available models: %s", client.list_local_models())
     
     # Chat example
     messages = [
@@ -153,11 +156,11 @@ def example_chat():
         {"role": "user", "content": "Explain the difference between a VM and a container in one paragraph."}
     ]
     
-    print("\n--- Non-streaming chat ---")
+    logger.info("\n--- Non-streaming chat ---")
     response = client.chat(messages)
-    print(response['message']['content'])
+    logger.info(response['message']['content'])
     
-    print("\n--- Streaming chat ---")
+    logger.info("\n--- Streaming chat ---")
     for chunk in client.stream_chat(messages):
         print(chunk, end='', flush=True)
     print("\n")
@@ -169,19 +172,19 @@ def example_generate():
     
     prompt = "What is the capital of France?"
     
-    print("\n--- Non-streaming generation ---")
+    logger.info("\n--- Non-streaming generation ---")
     response = client.generate(prompt)
-    print(response['response'])
+    logger.info(response['response'])
     
-    print("\n--- Streaming generation ---")
+    logger.info("\n--- Streaming generation ---")
     for chunk in client.stream_generate(prompt):
         print(chunk, end='', flush=True)
     print("\n")
 
 
 if __name__ == "__main__":
-    print("=== Chat Examples ===")
+    logger.info("=== Chat Examples ===")
     example_chat()
     
-    print("\n=== Generate Examples ===")
+    logger.info("\n=== Generate Examples ===")
     example_generate()

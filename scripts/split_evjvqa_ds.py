@@ -1,6 +1,9 @@
 import json
 import random
 from pathlib import Path
+import logging
+logger = logging.getLogger(__name__)
+
 
 def split_evjvqa_dataset(input_file, output_dir, train_ratio=0.7, val_ratio=0.3, test_ratio=0.1, seed=42):
     """
@@ -18,15 +21,15 @@ def split_evjvqa_dataset(input_file, output_dir, train_ratio=0.7, val_ratio=0.3,
     random.seed(seed)
     
     # Load the original dataset
-    print(f"Loading dataset from {input_file}...")
+    logger.info("Loading dataset from %s...", input_file)
     with open(input_file, 'r', encoding='utf-8') as f:
         data = json.load(f)
     
     images = data['images']
     annotations = data['annotations']
     
-    print(f"Total images: {len(images)}")
-    print(f"Total annotations: {len(annotations)}")
+    logger.info(f"Total images: {len(images)}")
+    logger.info(f"Total annotations: {len(annotations)}")
     
     # Normalize ratios to sum to 1
     total_ratio = train_ratio + val_ratio + test_ratio
@@ -47,10 +50,10 @@ def split_evjvqa_dataset(input_file, output_dir, train_ratio=0.7, val_ratio=0.3,
     val_images = images[train_end:val_end]
     test_images = images[val_end:]
     
-    print(f"\nSplit statistics:")
-    print(f"Train images: {len(train_images)} ({len(train_images)/total_images*100:.1f}%)")
-    print(f"Val images: {len(val_images)} ({len(val_images)/total_images*100:.1f}%)")
-    print(f"Test images: {len(test_images)} ({len(test_images)/total_images*100:.1f}%)")
+    logger.info(f"\nSplit statistics:")
+    logger.info(f"Train images: {len(train_images)} ({len(train_images)/total_images*100:.1f}%)")
+    logger.info(f"Val images: {len(val_images)} ({len(val_images)/total_images*100:.1f}%)")
+    logger.info(f"Test images: {len(test_images)} ({len(test_images)/total_images*100:.1f}%)")
     
     # Create image ID sets for each split
     train_image_ids = set(img['id'] for img in train_images)
@@ -62,10 +65,10 @@ def split_evjvqa_dataset(input_file, output_dir, train_ratio=0.7, val_ratio=0.3,
     val_annotations = [ann for ann in annotations if ann['image_id'] in val_image_ids]
     test_annotations = [ann for ann in annotations if ann['image_id'] in test_image_ids]
     
-    print(f"\nAnnotation statistics:")
-    print(f"Train annotations: {len(train_annotations)}")
-    print(f"Val annotations: {len(val_annotations)}")
-    print(f"Test annotations: {len(test_annotations)}")
+    logger.info(f"\nAnnotation statistics:")
+    logger.info(f"Train annotations: {len(train_annotations)}")
+    logger.info(f"Val annotations: {len(val_annotations)}")
+    logger.info(f"Test annotations: {len(test_annotations)}")
     
     # Create output directory if it doesn't exist
     output_dir = Path(output_dir)
@@ -80,12 +83,12 @@ def split_evjvqa_dataset(input_file, output_dir, train_ratio=0.7, val_ratio=0.3,
     
     for split_name, split_data in splits.items():
         output_file = output_dir / f'evjvqa_{split_name}.json'
-        print(f"\nSaving {split_name} set to {output_file}...")
+        logger.info(f"\nSaving {split_name} set to {output_file}...")
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(split_data, f, ensure_ascii=False, indent=2)
-        print(f"✓ Saved {len(split_data['images'])} images and {len(split_data['annotations'])} annotations")
+        logger.info(f"✓ Saved {len(split_data['images'])} images and {len(split_data['annotations'])} annotations")
     
-    print("\n✓ Dataset split completed successfully!")
+    logger.info("\n✓ Dataset split completed successfully!")
     return splits
 
 

@@ -8,16 +8,18 @@ to intelligently paraphrase Vietnamese questions using multiple rules:
 3. Active to Passive voice transformation
 """
 
+import logging
 import random
 from typing import Optional, Dict, Any, Union, List
 from ..base import BaseTextAugmentation
+logger = logging.getLogger(__name__)
 
 try:
     from underthesea import pos_tag, word_tokenize
 except ImportError:
     pos_tag = None
     word_tokenize = None
-    print("Warning: underthesea not installed. Install with: pip install underthesea")
+    logger.warning("underthesea not installed. Install with: pip install underthesea")
 
 
 class RuleBasedTextAugmentation(BaseTextAugmentation):
@@ -246,7 +248,7 @@ class RuleBasedTextAugmentation(BaseTextAugmentation):
             tokens = word_tokenize(sentence, format="text")
             tagged = pos_tag(tokens)
         except Exception as e:
-            print(f"Warning: POS tagging failed: {e}")
+            logger.warning("POS tagging failed: %s", e)
             return []
         
         new_sentences = []
@@ -282,7 +284,7 @@ class RuleBasedTextAugmentation(BaseTextAugmentation):
             tokens = word_tokenize(sentence, format="text").split()
             tagged = pos_tag(" ".join(tokens))
         except Exception as e:
-            print(f"Warning: POS tagging failed: {e}")
+            logger.warning("POS tagging failed: %s", e)
             return []
         
         for i, (word, pos) in enumerate(tagged):
@@ -316,7 +318,7 @@ class RuleBasedTextAugmentation(BaseTextAugmentation):
             tokens = word_tokenize(sentence, format="text").split()
             tagged = pos_tag(" ".join(tokens))
         except Exception as e:
-            print(f"Warning: POS tagging failed: {e}")
+            logger.warning("POS tagging failed: %s", e)
             return []
         
         # Find first verb
