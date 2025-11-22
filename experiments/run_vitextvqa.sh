@@ -50,7 +50,7 @@ CURRICULUM_POWER=2.0  # For polynomial strategy
 
 # WandB Configuration (set to true to enable)
 ENABLE_WANDB=true
-WANDB_PROJECT="VQA-ViTextVQA-X"
+WANDB_PROJECT="VQA-ViTextVQA"
 
 # Output directory
 OUTPUT_DIR="runs/vitextvqa_augmentation"
