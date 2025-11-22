@@ -78,7 +78,7 @@ def parse_args():
     parser.add_argument(
         '--batch_size',
         type=int,
-        default=64,
+        default=16,
         help='Mini-batch size for each iteration (default: %(default)s)'
     )
     parser.add_argument(
@@ -182,22 +182,35 @@ def parse_args():
         help='Enable curriculum learning'
     )
     parser.add_argument(
-        '--easy_epochs',
-        type=int,
-        default=None,
-        help='Number of epochs for easy difficulty (default: 30%% of total)'
+        '--curriculum_strategy',
+        type=str,
+        default='linear',
+        choices=['linear', 'cosine', 'exponential', 'step', 'polynomial'],
+        help='Curriculum learning strategy (default: %(default)s)'
     )
     parser.add_argument(
-        '--medium_epochs',
+        '--warmup_epochs',
         type=int,
-        default=None,
-        help='Number of epochs for medium difficulty (default: 30%% of total)'
+        default=0,
+        help='Number of warmup epochs before curriculum starts (default: %(default)s)'
     )
     parser.add_argument(
-        '--hard_epochs',
+        '--curriculum_gamma',
+        type=float,
+        default=0.1,
+        help='Gamma for exponential and step strategies (default: %(default)s)'
+    )
+    parser.add_argument(
+        '--curriculum_step_size',
         type=int,
         default=None,
-        help='Number of epochs for hard difficulty (default: remaining)'
+        help='Step size for step strategy (default: total_epochs // 3)'
+    )
+    parser.add_argument(
+        '--curriculum_power',
+        type=float,
+        default=2.0,
+        help='Power for polynomial strategy (default: %(default)s)'
     )
     
     # Logging and saving arguments

@@ -20,7 +20,7 @@
 export CUDA_VISIBLE_DEVICES=0  # Specify GPU ID(s) to use (e.g., "0", "0,1", "0,1,2,3")
 
 # Configuration
-DATASET_NAME="vivqa"
+DATASET_NAME="vivqax"
 VIS_MODEL="google/vit-base-patch16-224"
 TEXT_MODEL="vinai/bartpho-syllable-base"
 SEED=71
@@ -50,10 +50,10 @@ CURRICULUM_POWER=2.0  # For polynomial strategy
 
 # WandB Configuration (set to true to enable)
 ENABLE_WANDB=true
-WANDB_PROJECT="VQA-ViVQA"
+WANDB_PROJECT="VQA-ViVQA-X"
 
 # Output directory
-OUTPUT_DIR="runs/vivqa_augmentation"
+OUTPUT_DIR="runs/vivqax_augmentation"
 
 # Color codes for output
 RED='\033[0;31m'

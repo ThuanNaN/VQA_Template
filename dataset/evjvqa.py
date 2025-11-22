@@ -16,6 +16,8 @@ class EVJVQADataset(BaseDataset):
     """
     
     train_ann = "data/evjvqa/evjvqa_train.json"
+    val_ann = "data/evjvqa/evjvqa_val.json"
+    test_ann = "data/evjvqa/evjvqa_test.json"
 
     def __init__(self, ann_path, img_dir, text_processor, vis_processor, **kwargs):
         """
@@ -29,17 +31,18 @@ class EVJVQADataset(BaseDataset):
         super().__init__(ann_path, img_dir, text_processor, vis_processor, **kwargs)
 
     def get_label_encoder(self):
-        """Build label encoder from train split"""
+        """Build label encoder from all splits (train, val, test)"""
         all_answers = []
         
-        # Collect answers from training data
-        if os.path.exists(self.train_ann):
-            with open(self.train_ann, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                # EVJVQA annotations is a list
-                for annotation in data['annotations']:
-                    if 'answer' in annotation:
-                        all_answers.append(annotation['answer'])
+        # Collect answers from all splits
+        for ann_file in [self.train_ann, self.val_ann, self.test_ann]:
+            if os.path.exists(ann_file):
+                with open(ann_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    # EVJVQA annotations is a list
+                    for annotation in data['annotations']:
+                        if 'answer' in annotation:
+                            all_answers.append(annotation['answer'])
         
         # Create sorted label encoder
         sorted_answers = sorted(set(all_answers))

@@ -5,6 +5,9 @@ import base64
 import time
 import numpy as np
 import torch
+import logging
+logger = logging.getLogger(__name__)
+
 
 csv.field_size_limit(sys.maxsize)
 FIELDNAMES = ["img_id", "img_h", "img_w", "objects_id", "objects_conf",
@@ -22,7 +25,7 @@ def load_obj_tsv(fname, topk=None) -> List[Dict[str, Union[str, int, np.ndarray]
     """
     data = []
     start_time = time.time()
-    print("Start to load Faster-RCNN detected objects from %s" % fname)
+    logger.info("Start to load Faster-RCNN detected objects from %s", fname)
     with open(fname) as f:
         reader = csv.DictReader(f, FIELDNAMES, delimiter="\t")
         for i, item in enumerate(reader):
@@ -48,7 +51,7 @@ def load_obj_tsv(fname, topk=None) -> List[Dict[str, Union[str, int, np.ndarray]
             if topk is not None and len(data) == topk:
                 break
     elapsed_time = time.time() - start_time
-    print("Loaded %d images in file %s in %d seconds." % (len(data), fname, elapsed_time))
+    logger.info("Loaded %d images in file %s in %d seconds.", len(data), fname, elapsed_time)
     return data
 
 

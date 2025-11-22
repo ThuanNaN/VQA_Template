@@ -16,6 +16,9 @@
 # 7. Text + Image augmentation + Curriculum Learning
 ################################################################################
 
+# GPU Configuration
+export CUDA_VISIBLE_DEVICES=0  # Specify GPU ID(s) to use (e.g., "0", "0,1", "0,1,2,3")
+
 # Configuration
 DATASET_NAME="openvivqa"
 VIS_MODEL="google/vit-base-patch16-224"
@@ -26,9 +29,9 @@ BATCH_SIZE=16
 SEQ_LEN=64
 LEARNING_RATE=1e-4
 WEIGHT_DECAY=1e-4
-GRADIENT_ACCUMULATION=1
+GRADIENT_ACCUMULATION=2
 WARMUP_STEPS=250
-PATIENCE=5
+PATIENCE=10
 FP16_FLAG="--fp16"
 LOGGING_STEPS=50
 DATALOADER_WORKERS=4

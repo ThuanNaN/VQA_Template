@@ -3,6 +3,8 @@ import yaml
 import wget
 import subprocess
 import dotenv
+import logging    
+logger = logging.getLogger(__name__)
 
 dotenv.load_dotenv()
 HF_USER = os.getenv("HF_USER")
@@ -10,18 +12,18 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 
 if not HF_USER or not HF_TOKEN:
     raise ValueError("Hugging Face credentials are not set in environment variables.")
-
+logger.info("Hugging Face credentials loaded successfully.")
 
 def download_direct(url, path_save):
     wget.download(url, path_save)
-    print(f"\nDownloaded {url} to {path_save}")
+    logger.info("Downloaded %s to %s", url, path_save)
 
 
 def download_git(url, path_save):
     try:
         subprocess.run(["git", "clone", url, path_save])
     except Exception as e:
-        print(f"Error downloading {url} to {path_save}: {e}")
+        logger.error("Error downloading %s to %s: %s", url, path_save, e)
 
 
 def download_huggingface(url, path_save):
@@ -43,7 +45,7 @@ def download_huggingface(url, path_save):
             capture_output=True
         )
     except Exception as e:
-        print(f"Error downloading {url} to {path_save}: {e}")
+        logger.error("Error downloading %s to %s: %s", url, path_save, e)
 
 
 if __name__ == "__main__":
@@ -51,9 +53,9 @@ if __name__ == "__main__":
         config = yaml.safe_load(f)
     
     available_datasets = list(config.keys())
-    print("Available datasets:")
+    logger.info("Available datasets:")
     for idx, dataset in enumerate(available_datasets, 1):
-        print(f"{idx}. {dataset}")
+        logger.info("%d. %s", idx, dataset)
     
     selected = input("Enter the datasets to download (comma-separated or 'all'): ").strip()
     
@@ -64,7 +66,7 @@ if __name__ == "__main__":
         datasets_to_download = [available_datasets[int(i)-1] for i in selected_indexes if i.isdigit() and 1 <= int(i) <= len(available_datasets)]
     
     for dataset in datasets_to_download:
-        print(f"Downloading {dataset}...")
+        logger.info("Downloading %s...", dataset)
         path_save = config[dataset]['path_save']
         if not os.path.exists(path_save):
             if config[dataset].get('pre_cmd', None):
@@ -90,8 +92,8 @@ if __name__ == "__main__":
             git_folder = os.path.join(path_save, '.git')
             if os.path.exists(git_folder):
                 subprocess.run(['rm', '-rf', git_folder])
-                print(f"Removed .git folder from {path_save}")
+                logger.info("Removed .git folder from %s", path_save)
         else:
-            print(f"Dataset {dataset} already exists in {path_save}. Skipping...")
+            logger.info("Dataset %s already exists in %s. Skipping...", dataset, path_save)
     
-    print("Downloading completed")
+    logger.info("Downloading completed")

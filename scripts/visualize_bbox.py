@@ -15,8 +15,11 @@ from PIL import Image
 import gradio as gr
 from utils.dataset_utils import load_obj_tsv
 import time
+import logging
+logger = logging.getLogger(__name__)
 
-print("Starting Object Detection Visualization Interface...")
+
+logger.info("Starting Object Detection Visualization Interface...")
 
 # Get the absolute path to the project root directory (already defined above)
 
@@ -99,7 +102,7 @@ def get_image_path(tsv_filepath, img_id, remove_prefix=True):
         if os.path.exists(img_path):
             return img_path
         else:
-            print(f"Image not found: {img_path}")
+            logger.warning(f"Image not found: {img_path}")
     
     return None
 
@@ -115,14 +118,14 @@ def load_data_with_cache(tsv_filepath):
     """
     # Check if data is already in cache
     if tsv_filepath in data_cache:
-        print(f"Using cached data for {os.path.basename(tsv_filepath)}")
+        logger.info("Using cached data for %s", os.path.basename(tsv_filepath))
         return data_cache[tsv_filepath]
     
     # Load data from file
     start_time = time.time()
     data = load_obj_tsv(tsv_filepath)
     elapsed = time.time() - start_time
-    print(f"Loaded data from {os.path.basename(tsv_filepath)} in {elapsed:.2f} seconds")
+    logger.info("Loaded data from %s in %.2f seconds", os.path.basename(tsv_filepath), elapsed)
     
     # Store in cache
     data_cache[tsv_filepath] = data
@@ -146,7 +149,7 @@ def visualize_detection(image, detection_data, confidence_threshold=0.0):
         try:
             img = Image.open(image)
         except Exception as e:
-            print(f"Error loading image: {e}")
+            logger.error("Error loading image: %s", e)
             img_width = detection_data.get('img_w', 600)
             img_height = detection_data.get('img_h', 400)
             img = Image.new('RGB', (img_width, img_height), color='white')

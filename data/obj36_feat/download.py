@@ -3,6 +3,8 @@ from minio import Minio
 from minio.error import S3Error
 from dotenv import load_dotenv
 load_dotenv()
+import logging
+logger = logging.getLogger(__name__)
 
 # MinIO Configuration
 MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")
@@ -34,10 +36,10 @@ def download_object(client, object_name, download_path):
         
         # Download the object
         client.fget_object(MINIO_BUCKET, object_name, download_path)
-        print(f"Downloaded: {object_name} -> {download_path}")
+        logger.info(f"Downloaded: {object_name} -> {download_path}")
         return True
     except S3Error as e:
-        print(f"Error downloading {object_name}: {e}")
+        logger.error(f"Error downloading {object_name}: {e}")
         return False
 
 
@@ -48,7 +50,7 @@ def list_objects(client, prefix=""):
         object_list = [obj.object_name for obj in objects]
         return object_list
     except S3Error as e:
-        print(f"Error listing objects: {e}")
+        logger.error(f"Error listing objects: {e}")
         return []
 
 
@@ -57,10 +59,10 @@ def download_all_objects(client, prefix="", download_dir="./"):
     objects = list_objects(client, prefix)
     
     if not objects:
-        print(f"No objects found with prefix: {prefix}")
+        logger.warning(f"No objects found with prefix: {prefix}")
         return
     
-    print(f"Found {len(objects)} objects to download")
+    logger.info(f"Found {len(objects)} objects to download")
     
     success_count = 0
     for obj_name in objects:
@@ -70,7 +72,7 @@ def download_all_objects(client, prefix="", download_dir="./"):
         if download_object(client, obj_name, local_path):
             success_count += 1
     
-    print(f"\nDownload completed: {success_count}/{len(objects)} objects downloaded successfully")
+    logger.info(f"\nDownload completed: {success_count}/{len(objects)} objects downloaded successfully")
 
 
 def download_tsv_files(client, download_dir="./"):
@@ -79,10 +81,10 @@ def download_tsv_files(client, download_dir="./"):
     tsv_objects = [obj for obj in objects if obj.endswith('.tsv')]
     
     if not tsv_objects:
-        print("No .tsv files found in the bucket")
+        logger.warning("No .tsv files found in the bucket")
         return
     
-    print(f"Found {len(tsv_objects)} .tsv files to download")
+    logger.info(f"Found {len(tsv_objects)} .tsv files to download")
     
     success_count = 0
     for obj_name in tsv_objects:
@@ -93,17 +95,17 @@ def download_tsv_files(client, download_dir="./"):
         if download_object(client, obj_name, local_path):
             success_count += 1
     
-    print(f"\nDownload completed: {success_count}/{len(tsv_objects)} .tsv files downloaded successfully")
+    logger.info(f"\nDownload completed: {success_count}/{len(tsv_objects)} .tsv files downloaded successfully")
 
 
 if __name__ == "__main__":
-    print("=" * 60)
-    print("MinIO Object Downloader for VQA Features")
-    print("=" * 60)
-    print(f"Endpoint: {MINIO_ENDPOINT}")
-    print(f"Bucket: {MINIO_BUCKET}")
-    print(f"Secure: {MINIO_SECURE}")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("MinIO Object Downloader for VQA Features")
+    logger.info("=" * 60)
+    logger.info("Endpoint: %s", MINIO_ENDPOINT)
+    logger.info("Bucket: %s", MINIO_BUCKET)
+    logger.info("Secure: %s", MINIO_SECURE)
+    logger.info("=" * 60)
     
     # Initialize MinIO client
     client = get_minio_client()
@@ -111,20 +113,20 @@ if __name__ == "__main__":
     # Check if bucket exists
     try:
         if not client.bucket_exists(MINIO_BUCKET):
-            print(f"Error: Bucket '{MINIO_BUCKET}' does not exist")
+            logger.error("Error: Bucket '%s' does not exist", MINIO_BUCKET)
             exit(1)
     except S3Error as e:
-        print(f"Error checking bucket: {e}")
+        logger.error("Error checking bucket: %s", e)
         exit(1)
     
     # Get current directory (obj36_feat)
     current_dir = os.path.dirname(os.path.abspath(__file__))
     
-    print("\nDownload Options:")
-    print("1. Download all .tsv files")
-    print("2. Download all objects from bucket")
-    print("3. Download objects with specific prefix")
-    print("4. Download specific object")
+    logger.info("\nDownload Options:")
+    logger.info("1. Download all .tsv files")
+    logger.info("2. Download all objects from bucket")
+    logger.info("3. Download objects with specific prefix")
+    logger.info("4. Download specific object")
     
     choice = input("\nEnter your choice (1-4): ").strip()
     
@@ -140,4 +142,4 @@ if __name__ == "__main__":
         local_path = os.path.join(current_dir, os.path.basename(object_name))
         download_object(client, object_name, local_path)
     else:
-        print("Invalid choice")
+        logger.error("Invalid choice")

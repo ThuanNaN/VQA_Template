@@ -21,10 +21,12 @@ from .config import ExperimentConfig
 from .trainer import VQATrainer
 from dataset import (
     ViVQADataset,
+    ViVQAAddonDataset,
     OpenViVQADataset,
     ViTextVQADataset,
     EVJVQADataset,
     ViVQAXDataset,
+    ViVQAXAddonDataset,
     ViOCRVQADataset,
 )
 from models import SimpleVQAConfig, SimpleVQA
@@ -44,10 +46,12 @@ class DatasetFactory:
     
     DATASET_CLASSES = {
         'vivqa': ViVQADataset,
+        'vivqa-addon': ViVQAAddonDataset,
         'openvivqa': OpenViVQADataset,
         'vitextvqa': ViTextVQADataset,
         'evjvqa': EVJVQADataset,
         'vivqax': ViVQAXDataset,
+        'vivqax-addon': ViVQAXAddonDataset,
         'viocrvqa': ViOCRVQADataset,
     }
     
@@ -207,16 +211,30 @@ class VQATrainingPipeline:
         if not self.config.augmentation.enable_curriculum:
             return None
         
-        # Use smooth curriculum scheduler with cosine strategy by default
-        scheduler = CurriculumScheduler(
-            total_epochs=self.config.augmentation.total_epochs or self.config.training.epochs,
-            strategy='cosine',  # Smooth S-curve progression
-            warmup_epochs=max(1, int((self.config.augmentation.total_epochs or self.config.training.epochs) * 0.1)),  # 10% warmup
-            min_difficulty=0.1,  # Start gentle
-            max_difficulty=0.9   # Cap intensity
-        )
+        # Create scheduler with configured strategy
+        total_epochs = self.config.training.epochs
+        config = self.config.augmentation
         
-        logger.info("Smooth Curriculum Learning enabled")
+        # Prepare kwargs based on strategy
+        scheduler_kwargs = {
+            'total_epochs': total_epochs,
+            'strategy': config.curriculum_strategy,
+            'warmup_epochs': config.warmup_epochs,
+        }
+        
+        # Add strategy-specific parameters
+        if config.curriculum_strategy == 'exponential':
+            scheduler_kwargs['gamma'] = config.curriculum_gamma
+        elif config.curriculum_strategy == 'step':
+            step_size = config.curriculum_step_size or (total_epochs // 3)
+            scheduler_kwargs['step_size'] = step_size
+            scheduler_kwargs['gamma'] = config.curriculum_gamma
+        elif config.curriculum_strategy == 'polynomial':
+            scheduler_kwargs['power'] = config.curriculum_power
+        
+        scheduler = CurriculumScheduler(**scheduler_kwargs)
+        
+        logger.info(f"Curriculum Learning enabled with {config.curriculum_strategy} strategy")
         logger.info(f"Schedule: {scheduler.get_schedule_info()}")
         
         return scheduler
@@ -314,7 +332,10 @@ class VQATrainingPipeline:
             )
             logger.info(f"Wrong prediction tracking enabled: {wrong_pred_dir}")
         
-        early_stopping = EarlyStoppingCallback(self.config.training.patience)
+        if self.config.training.patience > 0:
+            early_stopping = EarlyStoppingCallback(self.config.training.patience)
+        else:
+            early_stopping = None
         
         trainer = VQATrainer(
             model=model,
@@ -322,7 +343,7 @@ class VQATrainingPipeline:
             train_dataset=train_dataset,
             eval_dataset=val_dataset,
             compute_metrics=compute_metrics,
-            callbacks=[early_stopping],
+            callbacks=[early_stopping] if early_stopping is not None else [],
             curriculum_scheduler=curriculum_scheduler,
             augmentation_factory=augmentation_factory,
             sample_observer=sample_observer,

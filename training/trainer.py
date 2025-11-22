@@ -213,6 +213,38 @@ class SampleObservationCallback(TrainerCallback):
         }
 
 
+class BestMetricCallback(TrainerCallback):
+    """
+    Callback for tracking the best metric (accuracy) during training.
+    
+    This callback tracks the best accuracy achieved during validation
+    and displays it at the end of training.
+    """
+    
+    def __init__(self):
+        self.best_accuracy = 0.0
+        self.best_epoch = 0
+    
+    def on_evaluate(self, args, state, control, metrics=None, **kwargs):
+        """Update best accuracy after each evaluation."""
+        if metrics is None:
+            return
+        
+        # Check for accuracy metric
+        accuracy = metrics.get('eval_accuracy', None)
+        if accuracy is not None and accuracy > self.best_accuracy:
+            self.best_accuracy = accuracy
+            self.best_epoch = int(state.epoch) if state.epoch is not None else 0
+            logger.info(f"New best accuracy: {self.best_accuracy:.4f} at epoch {self.best_epoch}")
+    
+    def on_train_end(self, args, state, control, **kwargs):
+        """Display best accuracy at the end of training."""
+        logger.info("=" * 80)
+        logger.info(f"Training completed!")
+        logger.info(f"Best Accuracy: {self.best_accuracy:.4f} (achieved at epoch {self.best_epoch})")
+        logger.info("=" * 80)
+
+
 class WrongPredictionCallback(TrainerCallback):
     """
     Callback for tracking all wrong predictions during validation.
@@ -351,6 +383,9 @@ class VQATrainer(Trainer):
         self.num_observation_samples = num_observation_samples
         self.wrong_prediction_tracker = wrong_prediction_tracker
         
+        # Add best metric tracking callback (always enabled)
+        self._setup_best_metric_tracking()
+        
         # Add curriculum learning callback if provided
         if curriculum_scheduler is not None and augmentation_factory is not None:
             self._setup_curriculum_learning()
@@ -362,6 +397,12 @@ class VQATrainer(Trainer):
         # Add wrong prediction tracking callback if provided
         if wrong_prediction_tracker is not None:
             self._setup_wrong_prediction_tracking()
+    
+    def _setup_best_metric_tracking(self):
+        """Set up best metric tracking callback."""
+        best_metric_callback = BestMetricCallback()
+        self.add_callback(best_metric_callback)
+        logger.info("Best Metric Tracking enabled")
     
     def _setup_curriculum_learning(self):
         """Set up curriculum learning callback."""

@@ -7,18 +7,18 @@ class ViVQAXDataset(BaseDataset):
     ViVQA-X Dataset Loader
     
     Dataset structure:
-    - data/vivqax/train.json
-    - data/vivqax/val.json
-    - data/vivqax/test.json
+    - data/vivqax/ViVQA-X_train.json
+    - data/vivqax/ViVQA-X_val.json
+    - data/vivqax/ViVQA-X_test.json
     
     Images are from MS COCO dataset and should be placed in:
     - data/MSCOCO/train2014/
     - data/MSCOCO/val2014/
     """
     
-    train_ann = "data/vivqax/train.json"
-    val_ann = "data/vivqax/val.json"
-    test_ann = "data/vivqax/test.json"
+    train_ann = "data/vivqax/ViVQA-X_train.json"
+    val_ann = "data/vivqax/ViVQA-X_val.json"
+    test_ann = "data/vivqax/ViVQA-X_test.json"
 
     def __init__(self, ann_path, img_dir, text_processor, vis_processor, 
                  include_explanations=False, **kwargs):
@@ -84,22 +84,9 @@ class ViVQAXDataset(BaseDataset):
             # image_name format: COCO_train2014_000000262146.jpg or COCO_val2014_000000524822.jpg
             image_name = item['image_name']
             
-            # Extract split from image name (train2014, val2014, etc.)
-            if 'train2014' in image_name:
-                img_folder = 'train2014'
-            elif 'val2014' in image_name:
-                img_folder = 'val2014'
-            elif 'test2015' in image_name:
-                img_folder = 'test2015'
-            else:
-                # Fallback: use image_dir directly
-                img_folder = ''
-            
-            # Construct full image path
-            if img_folder:
-                img_path = os.path.join(self.img_dir, img_folder, image_name)
-            else:
-                img_path = os.path.join(self.img_dir, image_name)
+            # The img_dir already points to the correct split folder (e.g., data/MSCOCO/train2014)
+            # So we just need to join img_dir with the image_name
+            img_path = os.path.join(self.img_dir, image_name)
             
             img_paths.append(img_path)
             
@@ -132,3 +119,10 @@ class ViVQAXDataset(BaseDataset):
             item['explanation'] = self.data['explanations'][idx]
         
         return item
+
+
+class ViVQAXAddonDataset(ViVQAXDataset):
+    """ViVQA-X dataset with addon training data"""
+    train_ann = "data/vivqax/ViVQA-X_train_addon.json"
+    val_ann = "data/vivqax/ViVQA-X_val.json"
+    test_ann = "data/vivqax/ViVQA-X_test.json"
