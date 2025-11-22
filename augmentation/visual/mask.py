@@ -52,8 +52,8 @@ class MaskedImageAugmentation(BaseImageAugmentation):
     
     def _get_default_mask_ratio(self) -> float:
         """Get default mask ratio based on difficulty level (0.0-1.0)."""
-        # Smooth interpolation: 5% to 50% masking
-        min_ratio = 0.05
+        # Smooth interpolation: 15% to 50% masking
+        min_ratio = 0.15
         max_ratio = 0.50
         return min_ratio + self.difficulty * (max_ratio - min_ratio)
     
