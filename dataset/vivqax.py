@@ -119,3 +119,10 @@ class ViVQAXDataset(BaseDataset):
             item['explanation'] = self.data['explanations'][idx]
         
         return item
+
+
+class ViVQAXAddonDataset(ViVQAXDataset):
+    """ViVQA-X dataset with addon training data"""
+    train_ann = "data/vivqax/ViVQA-X_train_addon.json"
+    val_ann = "data/vivqax/ViVQA-X_val.json"
+    test_ann = "data/vivqax/ViVQA-X_test.json"

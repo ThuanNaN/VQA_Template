@@ -21,10 +21,12 @@ from .config import ExperimentConfig
 from .trainer import VQATrainer
 from dataset import (
     ViVQADataset,
+    ViVQAAddonDataset,
     OpenViVQADataset,
     ViTextVQADataset,
     EVJVQADataset,
     ViVQAXDataset,
+    ViVQAXAddonDataset,
     ViOCRVQADataset,
 )
 from models import SimpleVQAConfig, SimpleVQA
@@ -44,10 +46,12 @@ class DatasetFactory:
     
     DATASET_CLASSES = {
         'vivqa': ViVQADataset,
+        'vivqa-addon': ViVQAAddonDataset,
         'openvivqa': OpenViVQADataset,
         'vitextvqa': ViTextVQADataset,
         'evjvqa': EVJVQADataset,
         'vivqax': ViVQAXDataset,
+        'vivqax-addon': ViVQAXAddonDataset,
         'viocrvqa': ViOCRVQADataset,
     }
     

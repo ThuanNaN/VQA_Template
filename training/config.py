@@ -52,36 +52,59 @@ class DataConfig:
     def _set_default_paths(self):
         """Set default paths based on dataset name."""
         dataset_map = {
+            # ViVQA Datasets
             'vivqa': {
                 'train_ann': 'data/vivqa/train.csv',
                 'val_ann': 'data/vivqa/test.csv',
                 'train_img': 'data/vivqa/images',
                 'val_img': 'data/vivqa/images',
             },
+            'vivqa-addon': {
+                'train_ann': 'data/vivqa/train_addon.csv',
+                'val_ann': 'data/vivqa/test.csv',
+                'train_img': 'data/vivqa/images',
+                'val_img': 'data/vivqa/images',
+            },
+
+            # OpenViVQA Dataset
             'openvivqa': {
                 'train_ann': 'data/openvivqa/vlsp2023_train_data.json',
                 'val_ann': 'data/openvivqa/vlsp2023_dev_data.json',
                 'train_img': 'data/openvivqa/training-images',
                 'val_img': 'data/openvivqa/dev-images',
             },
+
+            # ViTextVQA Dataset
             'vitextvqa': {
                 'train_ann': 'data/vitextvqa/ViTextVQA_train.json',
                 'val_ann': 'data/vitextvqa/ViTextVQA_dev.json',
                 'train_img': 'data/vitextvqa/images',
                 'val_img': 'data/vitextvqa/images',
             },
+
+            # EVJVQA Dataset
             'evjvqa': {
                 'train_ann': 'data/evjvqa/evjvqa_train.json',
                 'val_ann': 'data/evjvqa/evjvqa_val.json',
                 'train_img': 'data/evjvqa/images',
                 'val_img': 'data/evjvqa/images',
             },
+
+            # ViVQA-X Dataset
             'vivqax': {
                 'train_ann': 'data/vivqax/ViVQA-X_train.json',
                 'val_ann': 'data/vivqax/ViVQA-X_val.json',
                 'train_img': 'data/MSCOCO/train2014',
                 'val_img': 'data/MSCOCO/val2014',
             },
+            'vivqax-addon': {
+                'train_ann': 'data/vivqax/ViVQA-X_train_addon.json',
+                'val_ann': 'data/vivqax/ViVQA-X_val.json',
+                'train_img': 'data/MSCOCO/train2014',
+                'val_img': 'data/MSCOCO/val2014',
+            },
+
+            # ViOCRVQA Dataset
             'viocrvqa': {
                 'train_ann': 'data/viocrvqa/train.json',
                 'val_ann': 'data/viocrvqa/dev.json',
