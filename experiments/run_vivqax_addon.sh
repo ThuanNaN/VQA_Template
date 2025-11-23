@@ -17,7 +17,7 @@
 ################################################################################
 
 # GPU Configuration
-export CUDA_VISIBLE_DEVICES=0  # Specify GPU ID(s) to use (e.g., "0", "0,1", "0,1,2,3")
+export CUDA_VISIBLE_DEVICES=2  # Specify GPU ID(s) to use (e.g., "0", "0,1", "0,1,2,3")
 
 # Configuration
 DATASET_NAME="vivqax-addon"
@@ -34,7 +34,7 @@ WARMUP_STEPS=250
 PATIENCE=10
 FP16_FLAG="--fp16"
 LOGGING_STEPS=50
-DATALOADER_WORKERS=4
+DATALOADER_WORKERS=8
 SAMPLE_OBSERVATION="--enable_sample_observation"
 
 # Augmentation Methods

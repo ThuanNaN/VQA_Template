@@ -17,14 +17,14 @@
 ################################################################################
 
 # GPU Configuration
-export CUDA_VISIBLE_DEVICES=0  # Specify GPU ID(s) to use (e.g., "0", "0,1", "0,1,2,3")
+export CUDA_VISIBLE_DEVICES=1  # Specify GPU ID(s) to use (e.g., "0", "0,1", "0,1,2,3")
 
 # Configuration
 DATASET_NAME="vivqa"
 VIS_MODEL="google/vit-base-patch16-224" # microsoft/beit-base-patch16-224-pt22k-ft22k
 TEXT_MODEL="vinai/bartpho-syllable-base" # vinai/bartpho-syllable
 TEXT_AGGREGATION="mean" # 'mean', 'sum', 'max', 'first', 'attention', 'transformer', 'gated', 'weighted'
-SEED=71
+SEED=74
 EPOCHS=30
 BATCH_SIZE=16
 SEQ_LEN=64
@@ -35,7 +35,7 @@ WARMUP_STEPS=250
 PATIENCE=10
 FP16_FLAG="--fp16"
 LOGGING_STEPS=50
-DATALOADER_WORKERS=4
+DATALOADER_WORKERS=8
 SAMPLE_OBSERVATION="--enable_sample_observation"
 
 # Augmentation Methods
