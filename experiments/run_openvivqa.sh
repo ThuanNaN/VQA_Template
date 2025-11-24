@@ -17,7 +17,7 @@
 ################################################################################
 
 # GPU Configuration
-export CUDA_VISIBLE_DEVICES=0  # Specify GPU ID(s) to use (e.g., "0", "0,1", "0,1,2,3")
+# export CUDA_VISIBLE_DEVICES=0  # Specify GPU ID(s) to use (e.g., "0", "0,1", "0,1,2,3")
 
 # Configuration
 DATASET_NAME="openvivqa"
@@ -36,7 +36,6 @@ PATIENCE=10
 FP16_FLAG="--fp16"
 LOGGING_STEPS=50
 DATALOADER_WORKERS=8
-SAMPLE_OBSERVATION="--enable_sample_observation"
 
 # Augmentation Methods
 IMAGE_AUGMENT_METHOD="masked"  # Options: masked, none
@@ -117,7 +116,6 @@ run_experiment() {
         --patience $PATIENCE \
         --logging_steps $LOGGING_STEPS \
         --dataloader_workers $DATALOADER_WORKERS \
-        $SAMPLE_OBSERVATION \
         $FP16_FLAG \
         --output_dir $OUTPUT_DIR \
         --run_name $exp_name"
