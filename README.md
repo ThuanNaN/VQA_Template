@@ -61,6 +61,28 @@ python scripts/split_evjvqa_ds.py
 
 ### Tools
 
+- Extract object detection bounding boxes
+
+```bash
+wget 'https://www.dropbox.com/s/2h4hmgcvpaewizu/resnet101_faster_rcnn_final_iter_320000.caffemodel?dl=1' -O ./data/obj36_feat/resnet101_faster_rcnn_final_iter_320000.caffemodel
+```
+
+```bash
+mc cp vlai/faster-rcnn-feat/resnet101_faster_rcnn_final_iter_320000.caffemodel ./data/obj36_feat/
+```
+
+```bash
+docker pull airsplay/bottom-up-attention
+
+export DATA_ROOT="/home/thuannd/Repository/VQA_Template/data/"
+
+docker run --gpus all -v $DATA_ROOT:/workspace/images:ro -v $(pwd)/data/obj36_feat:/workspace/features --rm -it airsplay/bottom-up-attention bash
+
+cd /workspace/features
+python extract.py --imgroot /workspace/images/vivqa/images/ --ds_name vivqa \
+    # --split train
+```
+
 - Download object detection features
 
 ```bash
@@ -73,16 +95,6 @@ python download.py
 ```bash
 python scripts/visualize_bbox.py
 ```
-
-## Template Extraction & Hard Sample Mining
-
-Surface under-covered question patterns before training to target augmentation where it matters most:
-
-```bash
-python -m examples.template_extraction_usage
-```
-
-The script loads the ViVQA dataset, extracts reusable question templates, scores sample difficulty (0.0-1.0), and writes `runs/template_analysis/vivqa_hard_samples.json`. Feed that payload into your augmentation jobs to upsample rare templates, rare answers, or long/complex questions.
 
 ## Training
 
