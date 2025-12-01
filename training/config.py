@@ -62,8 +62,8 @@ class DataConfig:
             'vivqa-addon': {
                 'train_ann': 'data/vivqa/train_addon.csv',
                 'val_ann': 'data/vivqa/test.csv',
-                'train_img': 'data/vivqa/images',
-                'val_img': 'data/vivqa/images',
+                'train_img': 'data/vivqa/addon_images',
+                'val_img': 'data/vivqa/addon_images',
             },
 
             # OpenViVQA Dataset

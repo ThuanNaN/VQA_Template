@@ -185,3 +185,5 @@ observations/
 wrong_predictions/
 wandb/
 *.zip
+*.tmp
+*.caffemodel

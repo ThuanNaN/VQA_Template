@@ -17,12 +17,13 @@
 ################################################################################
 
 # GPU Configuration
-export CUDA_VISIBLE_DEVICES=0  # Specify GPU ID(s) to use (e.g., "0", "0,1", "0,1,2,3")
+# export CUDA_VISIBLE_DEVICES=0  # Specify GPU ID(s) to use (e.g., "0", "0,1", "0,1,2,3")
 
 # Configuration
 DATASET_NAME="viocrvqa"
-VIS_MODEL="google/vit-base-patch16-224"
-TEXT_MODEL="vinai/bartpho-syllable-base"
+VIS_MODEL="google/vit-base-patch16-224" # microsoft/beit-base-patch16-224-pt22k-ft22k
+TEXT_MODEL="vinai/bartpho-syllable-base" # vinai/bartpho-syllable
+TEXT_AGGREGATION="mean" # 'mean', 'sum', 'max', 'first', 'attention', 'transformer', 'gated', 'weighted'
 SEED=71
 EPOCHS=30
 BATCH_SIZE=16
@@ -34,8 +35,7 @@ WARMUP_STEPS=250
 PATIENCE=10
 FP16_FLAG="--fp16"
 LOGGING_STEPS=50
-DATALOADER_WORKERS=4
-SAMPLE_OBSERVATION="--enable_sample_observation"
+DATALOADER_WORKERS=8
 
 # Augmentation Methods
 IMAGE_AUGMENT_METHOD="masked"  # Options: masked, none
@@ -116,7 +116,6 @@ run_experiment() {
         --patience $PATIENCE \
         --logging_steps $LOGGING_STEPS \
         --dataloader_workers $DATALOADER_WORKERS \
-        $SAMPLE_OBSERVATION \
         $FP16_FLAG \
         --output_dir $OUTPUT_DIR \
         --run_name $exp_name"
@@ -178,6 +177,7 @@ run_experiment \
     "exp2_text_augment" \
     "Training with text augmentation only $TEXT_AUGMENT_METHOD" \
     "--enable_text_augmentation" \
+    "--text_aggregation $TEXT_AGGREGATION" \
     "--text_augmentation_type $TEXT_AUGMENT_METHOD" || exit 1
 
 ################################################################################
@@ -200,6 +200,7 @@ run_experiment \
     "Training with both text $TEXT_AUGMENT_METHOD and image $IMAGE_AUGMENT_METHOD augmentation" \
     "--enable_text_augmentation" \
     "--text_augmentation_type $TEXT_AUGMENT_METHOD" \
+    "--text_aggregation $TEXT_AGGREGATION" \
     "--enable_image_augmentation" \
     "--image_augmentation_type $IMAGE_AUGMENT_METHOD" \
     "--patch_size 16" || exit 1
@@ -213,6 +214,7 @@ run_experiment \
     "Training with text augmentation $TEXT_AUGMENT_METHOD and curriculum learning ($CURRICULUM_STRATEGY)" \
     "--enable_text_augmentation" \
     "--text_augmentation_type $TEXT_AUGMENT_METHOD" \
+    "--text_aggregation $TEXT_AGGREGATION" \
     "--enable_curriculum" \
     "--curriculum_strategy $CURRICULUM_STRATEGY" \
     "--warmup_epochs $WARMUP_EPOCHS" || exit 1
@@ -240,6 +242,7 @@ run_experiment \
     "Training with text $TEXT_AUGMENT_METHOD + image $IMAGE_AUGMENT_METHOD augmentation and curriculum learning ($CURRICULUM_STRATEGY)" \
     "--enable_text_augmentation" \
     "--text_augmentation_type $TEXT_AUGMENT_METHOD" \
+    "--text_aggregation $TEXT_AGGREGATION" \
     "--enable_image_augmentation" \
     "--image_augmentation_type $IMAGE_AUGMENT_METHOD" \
     "--patch_size 16" \
