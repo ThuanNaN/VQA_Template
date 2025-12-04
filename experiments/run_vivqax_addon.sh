@@ -9,20 +9,19 @@
 # Experiments:
 # 1. Baseline (no augmentation)
 # 2. Text augmentation only
-# 3. Image augmentation only
 # 4. Text + Image augmentation
 # 5. Text augmentation + Curriculum Learning
-# 6. Image augmentation + Curriculum Learning
 # 7. Text + Image augmentation + Curriculum Learning
 ################################################################################
 
 # GPU Configuration
-# export CUDA_VISIBLE_DEVICES=2  # Specify GPU ID(s) to use (e.g., "0", "0,1", "0,1,2,3")
+# export CUDA_VISIBLE_DEVICES=0  # Specify GPU ID(s) to use (e.g., "0", "0,1", "0,1,2,3")
 
 # Configuration
 DATASET_NAME="vivqax-addon"
-VIS_MODEL="google/vit-base-patch16-224"
-TEXT_MODEL="vinai/bartpho-syllable-base"
+VIS_MODEL="google/vit-base-patch16-224" # microsoft/beit-base-patch16-224-pt22k-ft22k
+TEXT_MODEL="vinai/bartpho-syllable-base" # vinai/bartpho-syllable
+TEXT_AGGREGATION="sum" # 'mean', 'sum', 'max', 'first', 'attention', 'transformer', 'gated', 'weighted'
 SEED=71
 EPOCHS=30
 BATCH_SIZE=16
@@ -49,10 +48,10 @@ CURRICULUM_POWER=2.0  # For polynomial strategy
 
 # WandB Configuration (set to true to enable)
 ENABLE_WANDB=true
-WANDB_PROJECT="VQA-ViVQA-X-Addon"
+WANDB_PROJECT="VQA-ViVQA-X-sum"
 
 # Output directory
-OUTPUT_DIR="runs/vivqax_addon_augmentation"
+OUTPUT_DIR="runs/vivqax_addon_sum"
 
 # Color codes for output
 RED='\033[0;31m'
@@ -160,13 +159,6 @@ echo ""
 # Create output directory
 mkdir -p $OUTPUT_DIR
 
-################################################################################
-# Experiment 1: Baseline (No Augmentation)
-################################################################################
-
-run_experiment \
-    "exp1_baseline" \
-    "Baseline training without any augmentation" || exit 1
 
 ################################################################################
 # Experiment 2: Text Augmentation Only
@@ -176,18 +168,9 @@ run_experiment \
     "exp2_text_augment" \
     "Training with text augmentation only $TEXT_AUGMENT_METHOD" \
     "--enable_text_augmentation" \
+    "--text_aggregation $TEXT_AGGREGATION" \
     "--text_augmentation_type $TEXT_AUGMENT_METHOD" || exit 1
 
-################################################################################
-# Experiment 3: Image Augmentation Only
-################################################################################
-
-run_experiment \
-    "exp3_image_augment" \
-    "Training with image augmentation $IMAGE_AUGMENT_METHOD only" \
-    "--enable_image_augmentation" \
-    "--image_augmentation_type $IMAGE_AUGMENT_METHOD" \
-    "--patch_size 16" || exit 1
 
 ################################################################################
 # Experiment 4: Text + Image Augmentation
@@ -198,6 +181,7 @@ run_experiment \
     "Training with both text $TEXT_AUGMENT_METHOD and image $IMAGE_AUGMENT_METHOD augmentation" \
     "--enable_text_augmentation" \
     "--text_augmentation_type $TEXT_AUGMENT_METHOD" \
+    "--text_aggregation $TEXT_AGGREGATION" \
     "--enable_image_augmentation" \
     "--image_augmentation_type $IMAGE_AUGMENT_METHOD" \
     "--patch_size 16" || exit 1
@@ -211,23 +195,11 @@ run_experiment \
     "Training with text augmentation $TEXT_AUGMENT_METHOD and curriculum learning ($CURRICULUM_STRATEGY)" \
     "--enable_text_augmentation" \
     "--text_augmentation_type $TEXT_AUGMENT_METHOD" \
+    "--text_aggregation $TEXT_AGGREGATION" \
     "--enable_curriculum" \
     "--curriculum_strategy $CURRICULUM_STRATEGY" \
     "--warmup_epochs $WARMUP_EPOCHS" || exit 1
 
-################################################################################
-# Experiment 6: Image Augmentation + Curriculum Learning
-################################################################################
-
-run_experiment \
-    "exp6_image_augment_cl" \
-    "Training with image augmentation $IMAGE_AUGMENT_METHOD and curriculum learning ($CURRICULUM_STRATEGY)" \
-    "--enable_image_augmentation" \
-    "--image_augmentation_type $IMAGE_AUGMENT_METHOD" \
-    "--patch_size 16" \
-    "--enable_curriculum" \
-    "--curriculum_strategy $CURRICULUM_STRATEGY" \
-    "--warmup_epochs $WARMUP_EPOCHS" || exit 1
 
 ################################################################################
 # Experiment 7: Text + Image Augmentation + Curriculum Learning
@@ -238,6 +210,7 @@ run_experiment \
     "Training with text $TEXT_AUGMENT_METHOD + image $IMAGE_AUGMENT_METHOD augmentation and curriculum learning ($CURRICULUM_STRATEGY)" \
     "--enable_text_augmentation" \
     "--text_augmentation_type $TEXT_AUGMENT_METHOD" \
+    "--text_aggregation $TEXT_AGGREGATION" \
     "--enable_image_augmentation" \
     "--image_augmentation_type $IMAGE_AUGMENT_METHOD" \
     "--patch_size 16" \
