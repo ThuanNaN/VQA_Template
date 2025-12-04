@@ -17,7 +17,7 @@
 ################################################################################
 
 # GPU Configuration
-# export CUDA_VISIBLE_DEVICES=1  # Specify GPU ID(s) to use (e.g., "0", "0,1", "0,1,2,3")
+export CUDA_VISIBLE_DEVICES=0  # Specify GPU ID(s) to use (e.g., "0", "0,1", "0,1,2,3")
 
 # Configuration
 DATASET_NAME="vivqa"
@@ -53,7 +53,7 @@ ENABLE_WANDB=true
 WANDB_PROJECT="VQA-ViVQA"
 
 # Output directory
-OUTPUT_DIR="runs/vivqa_augmentation"
+OUTPUT_DIR="runs/vivqa"
 
 # Color codes for output
 RED='\033[0;31m'
