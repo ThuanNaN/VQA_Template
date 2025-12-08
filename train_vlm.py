@@ -281,7 +281,6 @@ def train_vlm(args):
         processor=processor,
         eval_dataset=eval_dataset,
         device=device,
-        max_eval_samples=args.eval_max_samples,
         max_new_tokens=args.max_new_tokens
     )
     

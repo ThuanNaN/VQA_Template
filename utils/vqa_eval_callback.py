@@ -20,13 +20,11 @@ class VQAEvalCallback(TrainerCallback):
         processor, 
         eval_dataset, 
         device: str = "cuda",
-        max_eval_samples: int = None,
         max_new_tokens: int = 32
     ):
         self.processor = processor
         self.eval_dataset = eval_dataset
         self.device = device
-        self.max_eval_samples = max_eval_samples
         self.max_new_tokens = max_new_tokens
         
         self.current_epoch = 0
@@ -56,6 +54,20 @@ class VQAEvalCallback(TrainerCallback):
         metrics['eval_correct'] = correct
         metrics['eval_total'] = total
         
+        # Log to wandb if available
+        try:
+            import wandb
+            if wandb.run is not None:
+                wandb.log({
+                    'eval/loss': eval_loss,
+                    'eval/accuracy': accuracy,
+                    'eval/correct': correct,
+                    'eval/total': total,
+                    'epoch': self.current_epoch
+                }, step=state.global_step)
+        except ImportError:
+            pass
+        
         # Print epoch summary
         print(f"\n{'='*60}")
         print(f"📊 EPOCH {self.current_epoch} EVALUATION RESULTS")
@@ -84,6 +96,8 @@ class VQAEvalCallback(TrainerCallback):
     
     def _compute_vqa_accuracy(self, model) -> dict:
         """Compute VQA accuracy via generation."""
+        from tqdm import tqdm
+        
         model.eval()
         
         # Get model dtype for casting inputs
@@ -95,10 +109,11 @@ class VQAEvalCallback(TrainerCallback):
         correct = 0
         total = 0
         
+        # Limit samples if specified
         num_samples = len(self.eval_dataset)
         
         with torch.no_grad():
-            for idx in range(num_samples):
+            for idx in tqdm(range(num_samples), desc="Computing accuracy"):
                 try:
                     # Get conversation and raw item
                     conversation = self.eval_dataset[idx]
@@ -163,6 +178,11 @@ class VQAEvalCallback(TrainerCallback):
                     if pred_answer == gt_answer:
                         correct += 1
                     total += 1
+                    
+                    # Print progress every 100 samples
+                    if (idx + 1) % 100 == 0:
+                        current_acc = correct / total if total > 0 else 0
+                        print(f"\n   [{idx+1}/{num_samples}] Accuracy so far: {current_acc:.4f} ({correct}/{total})")
                     
                     # Clear memory periodically
                     del inputs, generated_ids

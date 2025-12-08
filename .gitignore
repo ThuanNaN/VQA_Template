@@ -177,6 +177,8 @@ api_keys.txt
 data/MSCOCO/
 data/openvivqa/
 data/vivqa/
+data/vivqa-x/
+data/viocrvqa/
 
 # Output directories
 simple_augmented_datasets/
