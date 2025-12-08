@@ -301,7 +301,7 @@ class VQATrainingPipeline:
             warmup_steps=self.config.training.warmup_steps,
             logging_dir="./logs",
             logging_steps=self.config.training.logging_steps,
-            save_total_limit=3,
+            save_total_limit=1,
             push_to_hub=False,
             save_safetensors=save_safetensors,
             run_name=run_name,
