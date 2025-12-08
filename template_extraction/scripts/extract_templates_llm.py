@@ -1,5 +1,5 @@
 """
-Script trích xuất template tổng quát từ các câu hỏi khó bằng LLM.
+pt trích xuất template tổng quát từ các câu hỏi khó bằng LLM.
 """
 import logging
 from typing import List, Dict
@@ -40,7 +40,9 @@ def extract_templates_with_classification(
     llm_client,
     question_types: List[str],
     min_count: int = 2,
-    batch_delay: float = 1.0
+    batch_delay: float = 1.0,
+    max_templates_per_type: int = None,
+    min_templates_per_type: int = 0
 ) -> Dict[str, List[Dict]]:
     """
     Trích xuất template từ các câu hỏi và gom nhóm theo loại.
@@ -51,6 +53,8 @@ def extract_templates_with_classification(
         question_types: Danh sách các loại câu hỏi
         min_count: Số lần xuất hiện tối thiểu để giữ template
         batch_delay: Delay giữa các lần gọi API (giây)
+        max_templates_per_type: Số lượng templates tối đa cho mỗi loại (None = không giới hạn)
+        min_templates_per_type: Số lượng templates tối thiểu cho mỗi loại (default: 0)
         
     Returns:
         Dict mapping từ question_type → list of templates
@@ -125,11 +129,25 @@ def extract_templates_with_classification(
         # Sort by count descending
         filtered_templates.sort(key=lambda x: x['count'], reverse=True)
         
-        final_templates[qtype] = filtered_templates
-        total_templates_after += len(filtered_templates)
+        # Apply max_templates_per_type limit
+        original_count = len(filtered_templates)
+        if max_templates_per_type is not None and len(filtered_templates) > max_templates_per_type:
+            filtered_templates = filtered_templates[:max_templates_per_type]
+            logger.info(f"  - {qtype}: Limited from {original_count} to {max_templates_per_type} templates (max_per_type)")
         
-        logger.info(f"  - {qtype}: {len(templates_dict)} → {len(filtered_templates)} templates")
+        # Check min_templates_per_type requirement
+        if len(filtered_templates) < min_templates_per_type:
+            logger.warning(f"  ⚠️  {qtype}: Only {len(filtered_templates)} templates (< min_per_type={min_templates_per_type})")
+        
+        # Only add question type if it meets minimum requirement
+        if len(filtered_templates) >= min_templates_per_type:
+            final_templates[qtype] = filtered_templates
+            total_templates_after += len(filtered_templates)
+            logger.info(f"  - {qtype}: {len(templates_dict)} → {len(filtered_templates)} templates ✅")
+        else:
+            logger.info(f"  - {qtype}: {len(templates_dict)} → {len(filtered_templates)} templates ❌ (removed - below min)")
     
     logger.info(f"✅ Tổng số template: {total_templates_before} → {total_templates_after}")
+    logger.info(f"✅ Số loại câu hỏi còn lại: {len(final_templates)}")
     
     return final_templates

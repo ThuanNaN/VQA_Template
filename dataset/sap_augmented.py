@@ -8,13 +8,14 @@ class CombinedDataset(BaseDataset):
     Dataset class that combines an original dataset with SapAugmented data.
     """
     
-    def __init__(self, original_dataset, augmented_json_path=None):
+    def __init__(self, original_dataset, augmented_json_path=None, max_augmented_samples=None):
         """
         Initialize Combined dataset by combining original dataset with augmented data.
         
         Args:
             original_dataset: Instance of BaseDataset (ViVQADataset, OpenViVQADataset, ViVQAXDataset)
             augmented_json_path: Direct path to augmented JSON file (optional)
+            max_augmented_samples: Maximum number of augmented samples to use (None = use all)
         """
         self.original_dataset = original_dataset
         self.text_processor = original_dataset.text_processor
@@ -22,6 +23,7 @@ class CombinedDataset(BaseDataset):
         self.kwargs = original_dataset.kwargs
         
         self.augmented_json_path = augmented_json_path
+        self.max_augmented_samples = max_augmented_samples
         
         # Combine datasets
         self.combined_data = self.load_and_combine_data()
@@ -51,6 +53,12 @@ class CombinedDataset(BaseDataset):
             print(f"✅ Found augmented dataset: {self.augmented_json_path}")
             with open(self.augmented_json_path, 'r', encoding='utf-8') as f:
                 augmented_data = json.load(f)
+            
+            # Limit augmented samples if specified
+            if self.max_augmented_samples is not None:
+                original_aug_count = len(augmented_data)
+                augmented_data = augmented_data[:self.max_augmented_samples]
+                print(f"   Limiting augmented samples: {original_aug_count} -> {len(augmented_data)}")
             
             for item in augmented_data:
                 # Use augmented question

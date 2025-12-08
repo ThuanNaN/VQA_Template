@@ -7,12 +7,13 @@ import time
 import logging
 from pathlib import Path
 import dotenv
-import csv
 
 from dataset import ViVQADataset, OpenViVQADataset, ViVQAXDataset
 from augmentation.augment_client import VlmAugmentClient
 from augmentation.translator import Translator
 from transformers import AutoTokenizer, AutoProcessor
+
+from dataset.viocrvqa import ViOCRVQADataset
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -48,28 +49,34 @@ def call_with_retry(func, max_retries=3, retry_delay=10, api_keys=None, current_
         raise ValueError("No API keys available")
     
     total_keys = len(api_keys)
-    keys_tried = 0
+    starting_key_idx = current_key_idx
     
-    while keys_tried < total_keys:
+    for keys_tried in range(total_keys):
         api_key = api_keys[current_key_idx]
+        logger.info(f"Using API key #{current_key_idx + 1}/{total_keys} (attempt {keys_tried + 1}/{total_keys})")
         
         for attempt in range(max_retries):
             try:
                 result = func(api_key)
+                logger.info(f"API call succeeded with key #{current_key_idx + 1}")
                 return result, current_key_idx
             except Exception as e:
-                logger.warning(f"API call failed (attempt {attempt+1}/{max_retries}): {e}")
+                logger.warning(f"API call failed with key #{current_key_idx + 1} (attempt {attempt+1}/{max_retries}): {e}")
                 if attempt < max_retries - 1:
                     logger.info(f"Retrying in {retry_delay} seconds...")
                     time.sleep(retry_delay)
         
-        # All retries failed, switch to next key
-        keys_tried += 1
-        if keys_tried < total_keys:
+        # All retries failed for this key
+        logger.error(f"API key #{current_key_idx + 1} exhausted after {max_retries} attempts")
+        
+        # Switch to next key ONLY if there are more keys to try
+        if keys_tried < total_keys - 1:
             current_key_idx = (current_key_idx + 1) % total_keys
             logger.warning(f"Switching to API key #{current_key_idx + 1}")
     
-    raise Exception("All API keys exhausted")
+    # If we get here, all keys have been tried and failed
+    logger.error(f"All {total_keys} API keys exhausted! Started from key #{starting_key_idx + 1}, tried all {total_keys} keys.")
+    raise Exception(f"All {total_keys} API keys exhausted after trying each {max_retries} times")
 
 def convert_numpy(obj):
     """Convert numpy types to native Python types for JSON serialization"""
@@ -182,7 +189,7 @@ def generate_simple_augmented_dataset(
     Process original samples until reaching the target number of augmented samples.
     
     Args:
-        dataset: Dataset to augment
+        dataset: Dataset to augment (required - used for answer validation)
         gemini_client: VLM augmentation client
         translator: Translation client (will be used automatically)
         output_path: Path to save augmented dataset
@@ -193,23 +200,23 @@ def generate_simple_augmented_dataset(
         use_translation: Whether to use translation augmentation (auto enabled)
         api_keys: List of API keys for rotation
     """
+    if dataset is None:
+        raise ValueError("Dataset is required for answer validation")
+    
     augmented_data = []
     failed_augmentations = 0
     api_calls_count = 0
     translation_calls_count = 0
     current_key_idx = 0
     
-    # Loading mapping answer file
-    answer_mapping = {}
-    with open('answer_mapping.csv', 'r') as f:
-        reader = csv.reader(f)
-        for row in reader:
-            if len(row) == 2:
-                question, answer = row
-                answer_mapping[question.strip()] = answer.strip()
+    # Get valid answers from dataset label encoder (normalized)
+    valid_answers = set(answer.lower().strip() for answer in dataset.label_encoder.keys())
+    print(f"Loaded {len(valid_answers)} valid answers from dataset label encoder")
 
     # Determine source of images: dataset or image_dir
     img_paths = []
+    use_dataset_mode = False
+    
     if image_dir:
         image_dir_path = Path(image_dir)
         exts = ('*.jpg', '*.jpeg', '*.png', '*.bmp', '*.webp')
@@ -219,10 +226,21 @@ def generate_simple_augmented_dataset(
         total_original_samples = len(img_paths)
         print(f"Using image directory mode. Found {total_original_samples} images in {image_dir}")
     elif dataset is not None:
-        total_original_samples = len(dataset)
-        # dataset.data is used later to index
-        img_paths = None
-        print(f"Using dataset mode. Dataset has {total_original_samples} samples")
+        # Extract UNIQUE images from dataset (1 image may have multiple QA pairs)
+        use_dataset_mode = True
+        unique_img_paths = []
+        seen_images = set()
+        
+        original_data = dataset.data
+        for i in range(len(original_data['img_paths'])):
+            img_path_str = str(original_data['img_paths'][i])
+            if img_path_str not in seen_images:
+                seen_images.add(img_path_str)
+                unique_img_paths.append(img_path_str)
+        
+        img_paths = unique_img_paths
+        total_original_samples = len(img_paths)
+        print(f"Using dataset mode. Dataset has {len(dataset)} QA pairs from {total_original_samples} unique images")
     else:
         raise ValueError("Either dataset or image_dir must be provided")
 
@@ -248,16 +266,29 @@ def generate_simple_augmented_dataset(
     idx = 0
     while idx < total_original_samples and len(augmented_data) < target_augmented_samples:
         try:
-            # Get original data
-            if img_paths is not None:
-                img_path = img_paths[idx]
-                original_answer = None
-            else:
+            # Get image path (now always from unique img_paths list)
+            img_path = img_paths[idx]
+            
+            # Collect original questions for this image (if using dataset mode)
+            if use_dataset_mode:
                 original_data = dataset.data
-                img_path = original_data['img_paths'][idx]
-                original_answer = original_data['answers'][idx]
+                original_questions_for_image = set()
+                current_img_path = str(img_path)
+                
+                # Find all QA pairs for this image
+                for i in range(len(original_data['img_paths'])):
+                    if str(original_data['img_paths'][i]) == current_img_path:
+                        # Normalize question for comparison (lowercase, strip)
+                        orig_q = original_data['questions'][i].lower().strip()
+                        original_questions_for_image.add(orig_q)
+                
+                print(f"Image {current_img_path} has {len(original_questions_for_image)} original questions to filter")
+            else:
+                # Image directory mode - no original questions to filter
+                original_questions_for_image = set()
             
             # === VLM-based augmentation ===
+            questions_to_use = []  # Initialize to empty list
             try:
                 # Generate augmented questions using VLM client with retry logic
                 def generate_with_key(api_key):
@@ -302,10 +333,20 @@ def generate_simple_augmented_dataset(
                     time.sleep(request_delay)
                 
             except Exception as e:
-                print(f"VLM augmentation failed for sample {idx}: {e}")
+                error_msg = str(e)
+                print(f"VLM augmentation failed for sample {idx}: {error_msg}")
+                
+                # If API keys exhausted, re-raise to trigger checkpoint save
+                if "API keys exhausted" in error_msg:
+                    logger.error("API keys exhausted in VLM call, propagating exception for checkpoint save...")
+                    raise  # Re-raise to outer exception handler
+                
                 failed_augmentations += num_augmentations_per_sample
                 if request_delay > 0:
                     time.sleep(request_delay)  # Still sleep on error
+                
+                # Set empty list so translation block is skipped
+                questions_to_use = []
             
             # === Translation augmentation (Auto enabled) ===
             if len(questions_to_use) > 0:
@@ -342,24 +383,27 @@ def generate_simple_augmented_dataset(
                                 # Stop if we've reached the target
                                 if len(augmented_data) >= target_augmented_samples:
                                     break
-                                # Get mapped answer - try multiple fallbacks
-                                mapped_answer = answer_mapping.get(answer)
-                                # also try mapping by the translated question text
-                                if mapped_answer is None and isinstance(question, dict):
-                                    # If parsed_questions returned dicts unexpectedly
-                                    qtext = question.get('question')
-                                    mapped_answer = answer_mapping.get(qtext)
-                                if mapped_answer is None and isinstance(question, str):
-                                    mapped_answer = answer_mapping.get(question)
-                                if mapped_answer is None:
-                                    print(f"Skipping question - no mapping found for answer/question: {answer} / {question}")
+                                
+                                # Normalize answer before checking
+                                normalized_answer = answer.lower().strip()
+                                
+                                # Check if answer is valid (exists in dataset label encoder)
+                                if normalized_answer not in valid_answers:
+                                    print(f"Skipping question - answer not in dataset: '{answer}' (normalized: '{normalized_answer}')")
+                                    failed_augmentations += 1
+                                    continue
+                                
+                                # Filter duplicate questions (same as original for this image)
+                                normalized_question = question.lower().strip()
+                                if normalized_question in original_questions_for_image:
+                                    print(f"Skipping duplicate question: '{question}'")
                                     failed_augmentations += 1
                                     continue
                                 
                                 translation_entry = {
                                     "img_path": str(img_path),
                                     "augmented_question": question,
-                                    "answer": mapped_answer
+                                    "answer": answer
                                 }
                                 print(f"{translation_entry}")  # Debug print
                                 augmented_data.append(translation_entry)
@@ -385,11 +429,23 @@ def generate_simple_augmented_dataset(
                         # Stop if we've reached the target
                         if len(augmented_data) >= target_augmented_samples:
                             break
-                        # Check answer exists in answer pool
-                        if a not in answer_mapping.values():
-                            print(f"Skipping question - no mapping found for answer: {a}")
+                        
+                        # Normalize answer before checking
+                        normalized_answer = a.lower().strip()
+                        
+                        # Check if answer is valid (exists in dataset label encoder)
+                        if normalized_answer not in valid_answers:
+                            print(f"Skipping question - answer not in dataset: '{a}' (normalized: '{normalized_answer}')")
                             failed_augmentations += 1
                             continue
+                        
+                        # Filter duplicate questions (same as original for this image)
+                        normalized_question = q.lower().strip()
+                        if normalized_question in original_questions_for_image:
+                            print(f"Skipping duplicate question: '{q}'")
+                            failed_augmentations += 1
+                            continue
+                        
                         translation_entry = {
                            "img_path": str(img_path),
                            "augmented_question": q,
@@ -400,12 +456,40 @@ def generate_simple_augmented_dataset(
 
 
         except Exception as e:
-            print(f"Failed to process sample {idx}: {e}")
+            error_msg = str(e)
+            print(f"Failed to process sample {idx}: {error_msg}")
+            
+            # If all API keys exhausted, save checkpoint and exit gracefully
+            if "API keys exhausted" in error_msg or "API key" in error_msg:
+                logger.error("API keys exhausted! Saving checkpoint before exit...")
+                output_path_obj = Path(output_path)
+                output_path_obj.parent.mkdir(parents=True, exist_ok=True)
+                
+                # Save checkpoint with current progress
+                checkpoint_path = output_path_obj.parent / f"{output_path_obj.stem}_checkpoint_{len(augmented_data)}.json"
+                with open(checkpoint_path, 'w', encoding='utf-8') as f:
+                    json.dump(augmented_data, f, ensure_ascii=False, indent=2, default=convert_numpy)
+                
+                logger.info(f"Checkpoint saved: {len(augmented_data)} samples saved to {checkpoint_path}")
+                logger.info(f"Progress: Processed {idx}/{total_original_samples} original samples")
+                logger.info(f"You can resume by loading this checkpoint")
+                pbar.close()
+                return augmented_data  # Return what we have so far
+            
             total_augmentations_for_sample = num_augmentations_per_sample + (num_augmentations_per_sample if use_translation else 0)
             failed_augmentations += total_augmentations_for_sample
         
         # Move to next original sample
         idx += 1
+        
+        # Save checkpoint every 1000 samples to prevent data loss
+        if len(augmented_data) > 0 and len(augmented_data) % 1000 == 0:
+            output_path_obj = Path(output_path)
+            output_path_obj.parent.mkdir(parents=True, exist_ok=True)
+            checkpoint_path = output_path_obj.parent / f"{output_path_obj.stem}_checkpoint_{len(augmented_data)}.json"
+            with open(checkpoint_path, 'w', encoding='utf-8') as f:
+                json.dump(augmented_data, f, ensure_ascii=False, indent=2, default=convert_numpy)
+            logger.info(f"Checkpoint saved: {len(augmented_data)} samples at {checkpoint_path}")
     
     pbar.close()
     
@@ -430,7 +514,7 @@ def generate_simple_augmented_dataset(
 
 def main():
     parser = argparse.ArgumentParser(description="Generate simple augmented dataset with auto translation")
-    parser.add_argument('--dataset_name', type=str, choices=['ViVQA', 'OpenViVQA', 'ViVQA-X'],
+    parser.add_argument('--dataset_name', type=str, choices=['ViVQA', 'OpenViVQA', 'ViVQA-X', 'ViOCRVQA'],
                         default='ViVQA', help='Dataset name')
     parser.add_argument('--num_samples', type=int, default=5,
                         help='Target number of augmented samples to generate (default: 5)')
@@ -488,9 +572,17 @@ def main():
             vis_processor=vis_processor,
             max_length=64
         )
+    elif args.dataset_name == 'ViOCRVQA':
+        dataset = ViOCRVQADataset(
+            ann_path="data/viocrvqa/train.json",
+            img_dir="data/viocrvqa/images",
+            text_processor=text_processor,
+            vis_processor=vis_processor,
+            max_length=64
+        )
     
     print(f"Loaded dataset with {len(dataset)} samples")
-    
+    generate_simple_augmented_dataset
     # Load API keys from file
     logger.info("Loading API keys from api_keys.txt...")
     api_keys = load_api_keys('api_keys.txt')
@@ -530,8 +622,9 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
     
     augmented_output_path = output_dir / f"{args.dataset_name}_simple_augmented.json"
+
     augmented_data = generate_simple_augmented_dataset(
-        dataset=(dataset if args.image_dir is None else None),
+        dataset=dataset,  # Always pass dataset for answer validation
         image_dir=args.image_dir,
         gemini_client=gemini_client,
         translator=translator,
@@ -540,7 +633,7 @@ def main():
         num_augmentations_per_sample=args.num_augmentations_per_sample,
         lambda_value=args.lambda_value,
         request_delay=args.request_delay,
-        use_translation=args.use_translation,  # Always enabled
+        use_translation=args.use_translation,
         api_keys=api_keys,  # Pass API keys for rotation
     )
     

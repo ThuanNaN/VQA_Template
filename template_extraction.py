@@ -14,6 +14,8 @@ import logging
 from pathlib import Path
 import sys
 
+from dataset.viocrvqa import ViOCRVQADataset
+
 # Add template_extraction/scripts to path
 template_scripts_path = Path(__file__).parent / "template_extraction" / "scripts"
 sys.path.insert(0, str(template_scripts_path))
@@ -44,10 +46,10 @@ def main():
     )
     
     # ===== Model & Dataset =====
-    parser.add_argument('--checkpoint_path', type=str, required=True,
+    parser.add_argument('--checkpoint_path', type=str, required=False,
                         help='Đường dẫn tới checkpoint model baseline')
     parser.add_argument('--dataset_name', type=str, default='ViVQA',
-                        choices=['ViVQA', 'OpenViVQA', 'ViVQA-X'],
+                        choices=['ViVQA', 'OpenViVQA', 'ViVQA-X', 'ViOCRVQA'],
                         help='Tên dataset')
     parser.add_argument('--vis_model_name', type=str, default='google/vit-base-patch16-224',
                         help='Vision model name')
@@ -68,10 +70,10 @@ def main():
     # ===== Template Extraction =====
     parser.add_argument('--api_key', type=str, required=False,
                         help='API key cho LLM service')
-    parser.add_argument('--llm_model', type=str, default='gemini/gemini-1.5-flash',
+    parser.add_argument('--llm_model', type=str, default='ollama/gemma2:9b',
                         help='Tên model LLM')
     parser.add_argument('--question_types', type=str, nargs='+',
-                        default=['màu_sắc', 'số_lượng', 'đối_tượng', 'hành_động', 
+                        default=['màu_sắc', 'đối_tượng', 'hành_động', 
                                 'vị_trí', 'lý_do', 'trạng_thái', 'thời_gian'],
                         help='Danh sách loại câu hỏi tiếng Việt')
     parser.add_argument('--min_count', type=int, default=2,
@@ -80,18 +82,25 @@ def main():
                         help='Delay giữa các lần gọi API (giây)')
     parser.add_argument('--max_samples', type=int, default=None,
                         help='Số lượng mẫu tối đa để xử lý (None = tất cả)')
+    parser.add_argument('--max_templates_per_type', type=int, default=12,
+                        help='Số lượng templates TỐI ĐA cho mỗi loại câu hỏi (None = không giới hạn)')
+    parser.add_argument('--min_templates_per_type', type=int, default=0,
+                        help='Số lượng templates TỐI THIỂU cho mỗi loại câu hỏi (default: 0)')
     
     # ===== Output =====
     parser.add_argument('--output_dir', type=str, default='template_extraction/data',
-                        help='Thư mục lưu kết quả')
+                        help='Thư mục lưu kết quả (sẽ tự động thêm tên dataset)')
     
     args = parser.parse_args()
     
     # Setup
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     logger.info(f"Using device: {device}")
-    output_dir = Path(args.output_dir)
+    
+    # Create output directory with dataset name
+    output_dir = Path(args.output_dir) / args.dataset_name.lower()
     output_dir.mkdir(parents=True, exist_ok=True)
+    logger.info(f"Output directory: {output_dir}")
     
     # ===== STEP 1: Compute Difficulty =====
     logger.info("\n" + "="*60)
@@ -122,8 +131,16 @@ def main():
         )
     elif args.dataset_name == 'ViVQA-X':
         dataset = ViVQAXDataset(
-            ann_path="data/vivqa/train.csv",
-            img_dir="data/vivqa/images",
+            ann_path="data/vivqa-x/ViVQA-X_train.json",
+            img_dir="data/MSCOCO/train2014",
+            text_processor=text_processor,
+            vis_processor=vis_processor,
+            max_length=args.seq_len
+        )
+    elif args.dataset_name == 'ViOCRVQA':
+        dataset = ViOCRVQADataset(
+            ann_path="data/viocrvqa/train.json",
+            img_dir="data/viocrvqa/images",
             text_processor=text_processor,
             vis_processor=vis_processor,
             max_length=args.seq_len
@@ -137,16 +154,17 @@ def main():
         num_classes=len(dataset.label_encoder)
     )
     model = SimpleVQA(config)
-    
-    # Check if checkpoint path is a directory or file
-    checkpoint_path = Path(args.checkpoint_path)
-    if checkpoint_path.is_dir():
-        model_file = checkpoint_path / "pytorch_model.bin"
-    else:
-        model_file = checkpoint_path
-    
-    checkpoint = torch.load(model_file, map_location=device, weights_only=False)
-    model.load_state_dict(checkpoint)
+
+    if args.checkpoint_path:
+        # Check if checkpoint path is a directory or file
+        checkpoint_path = Path(args.checkpoint_path)
+        if checkpoint_path.is_dir():
+            model_file = checkpoint_path / "pytorch_model.bin"
+        else:
+            model_file = checkpoint_path
+        
+        checkpoint = torch.load(model_file, map_location=device, weights_only=False)
+        model.load_state_dict(checkpoint)
     
     # Compute difficulty
     difficulty_scores = compute_difficulty_scores(
@@ -199,7 +217,9 @@ def main():
         llm_client=llm_client,
         question_types=args.question_types,
         min_count=args.min_count,
-        batch_delay=args.batch_delay
+        batch_delay=args.batch_delay,
+        max_templates_per_type=args.max_templates_per_type,
+        min_templates_per_type=args.min_templates_per_type
     )
     
     # Save templates

@@ -187,4 +187,5 @@ template_extraction/data/
 *.sh
 test.ipynb
 runs/
+runs_vlm/
 wandb/

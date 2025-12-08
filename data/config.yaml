@@ -16,7 +16,6 @@ MSCOCO:
     "rm ./MSCOCO/test2015.zip"
   ]
 
-
 ViVQA:
   url: https://github.com/kh4nh12/ViVQA.git
   path_save: ./vivqa
@@ -29,7 +28,6 @@ ViVQA-X:
   cmd: [
     "rm -r ./vivqa-x/images",
   ]
-
 
 OpenViVQA:
   url: https://huggingface.co/datasets/uitnlp/OpenViVQA-dataset
@@ -55,7 +53,6 @@ ViTextVQA:
     "rm -r ./vitextvqa/test_zip",
     "rm ./vitextvqa/ViTextVQA_images.zip"
   ]
-
 
 ViOCRVQA:
   url: https://huggingface.co/datasets/huyhuy123/ViOCRVQA

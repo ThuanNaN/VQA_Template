@@ -1,22 +1,3 @@
-"""
-train.py - Training script với Replay Sampling per-Epoch
-
-Chức năng chính:
-- Fine-tune VQA model từ checkpoint có sẵn
-- Sử dụng augmented dataset làm nguồn dữ liệu chính
-- Replay sampling theo epoch: mỗi epoch mix augmented data + replay samples từ original/buffer
-- Support resume training từ Hugging Face checkpoint
-
-Cách chạy:
-python train.py --checkpoint runs/checkpoint-3750 --replay_ratio 0.2 --replay_source original --epochs 10
-
-Arguments chính:
---checkpoint: Đường dẫn tới checkpoint để resume training
---replay_ratio: Tỷ lệ replay samples trong mỗi epoch (0.0-1.0)
---replay_source: Nguồn replay (original/buffer)
---use_sap_combined: Sử dụng augmented dataset
-"""
-
 import os
 from pathlib import Path
 import wandb
@@ -24,7 +5,7 @@ import argparse
 import torch
 import random
 import numpy as np
-from dataset import ViVQADataset, OpenViVQADataset, ViVQAXDataset, CombinedDataset
+from dataset import ViVQADataset, OpenViVQADataset, ViVQAXDataset, CombinedDataset, ViOCRVQADataset
 from models import SimpleVQAConfig, SimpleVQA
 from transformers import (
     AutoTokenizer, AutoProcessor, 
@@ -224,10 +205,12 @@ if __name__ == '__main__':
     parser.add_argument('--text_model_name', type=str, default='vinai/bartpho-syllable-base',
                         choices=['vinai/bartpho-syllable-base', 'vinai/bartpho-syllable', 'FacebookAI/xlm-roberta-base'],
                         help='Text model name (default: %(default)s)')
-    parser.add_argument('--dataset_name', type=str, default='ViVQA', choices=['ViVQA', 'OpenViVQA', 'ViVQA-X'],
+    parser.add_argument('--dataset_name', type=str, default='ViVQA', choices=['ViVQA', 'OpenViVQA', 'ViVQA-X', 'ViOCRVQA'],
                         help='Dataset name (default: %(default)s)')
     parser.add_argument('--use_sap_combined', action='store_true',
                         help='Use CombinedDataset with SAP augmentation')
+    parser.add_argument('--max_augmented_samples', type=int, default=None,
+                        help='Maximum number of augmented samples to use (None = use all). Requires --use_sap_combined')
     
     # Replay Sampling Arguments
     parser.add_argument('--replay_ratio', type=float, default=0.0,
@@ -286,6 +269,14 @@ if __name__ == '__main__':
     if args.replay_ratio > 0 and not args.use_sap_combined:
         print("⚠️  Warning: replay_ratio > 0 but use_sap_combined=False")
         print("   Replay chỉ có ý nghĩa khi dùng augmented dataset")
+    
+    # Validate max_augmented_samples
+    if args.max_augmented_samples is not None and not args.use_sap_combined:
+        print("⚠️  Warning: max_augmented_samples specified but use_sap_combined=False")
+        print("   Option này chỉ có ý nghĩa khi dùng augmented dataset")
+    
+    if args.max_augmented_samples is not None and args.max_augmented_samples < 0:
+        raise ValueError(f"max_augmented_samples must be >= 0, got {args.max_augmented_samples}")
     
     # Set global seed for reproducibility
     set_global_seed(args.seed)
@@ -346,6 +337,7 @@ if __name__ == '__main__':
             train_dataset = CombinedDataset(
                 original_dataset=original_train_dataset,
                 augmented_json_path="simple_augmented_datasets/vivqa/ViVQA_simple_augmented.json",
+                max_augmented_samples=args.max_augmented_samples
             )
             
             # Validation dataset remains original
@@ -368,7 +360,8 @@ if __name__ == '__main__':
             
             train_dataset = CombinedDataset(
                 original_dataset=original_train_dataset,
-                augmented_ann_path="augmented_datasets/OpenViVQA_sap_augmented.json",
+                augmented_json_path="augmented_datasets/OpenViVQA_sap_augmented.json",
+                max_augmented_samples=args.max_augmented_samples
             )
             
             val_dataset = OpenViVQADataset(
@@ -389,7 +382,8 @@ if __name__ == '__main__':
             
             train_dataset = CombinedDataset(
                 original_dataset=original_train_dataset,
-                augmented_json_path="augmented_datasets/ViVQA-X_sap_augmented.json",
+                augmented_json_path="simple_augmented_datasets/vivqa-x/ViVQA-X_simple_augmented.json",
+                max_augmented_samples=args.max_augmented_samples
             )
 
             val_dataset = ViVQAXDataset(
@@ -399,6 +393,7 @@ if __name__ == '__main__':
                 vis_processor=vis_processor,
                 max_length=args.seq_len
             )
+
         
         # Nếu có replay sampling, trích xuất original và augmented indices
         if args.replay_ratio > 0:
@@ -455,9 +450,25 @@ if __name__ == '__main__':
                 vis_processor=vis_processor,
                 max_length=args.seq_len
             )
+        elif args.dataset_name == 'ViOCRVQA':
+            train_dataset = ViOCRVQADataset(
+                ann_path="data/viocrvqa/train.json",
+                img_dir="data/viocrvqa/images",
+                text_processor=text_processor,
+                vis_processor=vis_processor,
+                max_length=args.seq_len
+            )
+            
+            val_dataset = ViOCRVQADataset(
+                ann_path="data/viocrvqa/test.json",
+                img_dir="data/viocrvqa/images",
+                text_processor=text_processor,
+                vis_processor=vis_processor,
+                max_length=args.seq_len
+            )
         else:
             raise ValueError("Dataset name not found")
-    
+
     print(f"✅ Train dataset size: {len(train_dataset)}")
     print(f"✅ Val dataset size: {len(val_dataset)}")
     if replay_pool is not None:
