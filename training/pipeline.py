@@ -28,6 +28,7 @@ from dataset import (
     ViVQAXDataset,
     ViVQAXAddonDataset,
     ViOCRVQADataset,
+    ViOCRVQAAddonDataset,
 )
 from models import SimpleVQAConfig, SimpleVQA
 from augmentation import (
@@ -53,6 +54,7 @@ class DatasetFactory:
         'vivqax': ViVQAXDataset,
         'vivqax-addon': ViVQAXAddonDataset,
         'viocrvqa': ViOCRVQADataset,
+        'viocrvqa-addon': ViOCRVQAAddonDataset,
     }
     
     @classmethod

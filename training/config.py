@@ -111,6 +111,12 @@ class DataConfig:
                 'train_img': 'data/viocrvqa/images',
                 'val_img': 'data/viocrvqa/images',
             },
+            'viocrvqa-addon': {
+                'train_ann': 'data/viocrvqa/train_addon.json',
+                'val_ann': 'data/viocrvqa/dev.json',
+                'train_img': 'data/viocrvqa/images',
+                'val_img': 'data/viocrvqa/images',
+            }
         }
         
         if self.dataset_name in dataset_map:

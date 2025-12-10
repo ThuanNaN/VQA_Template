@@ -72,7 +72,7 @@ def parse_args():
         '--dataset_name',
         type=str,
         default='vivqa',
-        choices=['vivqa', 'vivqa-addon', 'openvivqa', 'vitextvqa', 'evjvqa', 'vivqax', 'vivqax-addon', 'viocrvqa'],
+        choices=['vivqa', 'vivqa-addon', 'openvivqa', 'vitextvqa', 'evjvqa', 'vivqax', 'vivqax-addon', 'viocrvqa', 'viocrvqa-addon'],
         help='Dataset name (default: %(default)s)'
     )
     parser.add_argument(

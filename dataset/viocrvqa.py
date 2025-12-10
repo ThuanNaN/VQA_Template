@@ -120,3 +120,10 @@ class ViOCRVQADataset(BaseDataset):
         item['question_id'] = self.data['question_ids'][idx]
         
         return item
+
+
+class ViOCRVQAAddonDataset(ViOCRVQADataset):
+    """ViOCRVQA dataset with addon training data"""
+    train_ann = "data/viocrvqa/train_addon.json"
+    dev_ann = "data/viocrvqa/dev.json"
+    test_ann = "data/viocrvqa/test.json"
